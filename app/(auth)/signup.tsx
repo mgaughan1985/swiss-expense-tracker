@@ -1,0 +1,390 @@
+// app/(auth)/signup.tsx - Complete version with all features
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
+import Svg, { Path, Rect } from 'react-native-svg';
+import { colors, spacing, borderRadius, typography } from '@/theme';
+
+// Swiss Flag Component
+function SwissFlag({ size = 40 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 32 32">
+      <Rect width="32" height="32" fill={colors.primary} />
+      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
+    </Svg>
+  );
+}
+
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+export default function SignupScreen() {
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  async function handleSignup() {
+    // Validation
+    if (!name.trim()) {
+      Alert.alert('Missing Information', 'Please enter your name');
+      return;
+    }
+
+    if (!email.trim()) {
+      Alert.alert('Missing Information', 'Please enter your email');
+      return;
+    }
+
+    if (!validateEmail(email.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      return;
+    }
+
+    if (!password) {
+      Alert.alert('Missing Information', 'Please enter a password');
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert('Weak Password', 'Password must be at least 8 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password: password,
+        options: {
+          data: {
+            full_name: name.trim(),
+          },
+        },
+      });
+
+      if (error) {
+        if (error.message.includes('already registered')) {
+          Alert.alert(
+            'Account Exists',
+            'This email is already registered. Please sign in instead.',
+            [
+              { text: 'OK' },
+              { text: 'Go to Login', onPress: () => router.push('/(auth)/login') },
+            ]
+          );
+        } else {
+          Alert.alert('Signup Failed', error.message);
+        }
+        return;
+      }
+
+      // Check if email confirmation is required
+      Alert.alert(
+        'Account Created! 🎉',
+        'Please check your email to confirm your account, then sign in.',
+        [
+          {
+            text: 'Go to Login',
+            onPress: () => router.push('/(auth)/login'),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Signup error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          disabled={loading}>
+          <ArrowLeft size={24} color={colors.gray900} />
+        </TouchableOpacity>
+
+        {/* Header */}
+        <View style={styles.header}>
+          <SwissFlag size={56} />
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Start tracking your work expenses today</Text>
+        </View>
+
+        {/* Signup Form */}
+        <View style={styles.formContainer}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="John Doe"
+              placeholderTextColor={colors.gray400}
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              autoCorrect={false}
+              textContentType="name"
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.gray400}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="At least 8 characters"
+                placeholderTextColor={colors.gray400}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="newPassword"
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+                disabled={loading}>
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.gray500} />
+                ) : (
+                  <Eye size={20} color={colors.gray500} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Re-enter password"
+                placeholderTextColor={colors.gray400}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="newPassword"
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                disabled={loading}>
+                {showConfirmPassword ? (
+                  <EyeOff size={20} color={colors.gray500} />
+                ) : (
+                  <Eye size={20} color={colors.gray500} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.signupButton, loading && styles.signupButtonDisabled]}
+            onPress={handleSignup}
+            disabled={loading}>
+            {loading ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text style={styles.signupButtonText}>Create Account</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => router.push('/(auth)/login')}
+            disabled={loading}>
+            <Text style={styles.loginButtonText}>
+              Already have an account? <Text style={styles.loginButtonTextBold}>Sign In</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Terms */}
+        <Text style={styles.terms}>
+          By creating an account, you agree to store your receipt data securely for tax purposes.
+        </Text>
+
+        {/* Footer Decoration */}
+        <View style={styles.footer}>
+          <View style={styles.footerLine} />
+          <SwissFlag size={16} />
+          <View style={styles.footerLine} />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 60,
+    paddingBottom: 40,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xxxl,
+  },
+  title: {
+    ...typography.title,
+    fontSize: 28,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
+  },
+  subtitle: {
+    ...typography.subtitle,
+    fontSize: 14,
+  },
+  formContainer: {
+    gap: spacing.lg,
+  },
+  inputGroup: {
+    gap: spacing.sm,
+  },
+  label: {
+    ...typography.label,
+  },
+  input: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: colors.gray900,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    borderRadius: borderRadius.md,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: colors.gray900,
+  },
+  eyeButton: {
+    padding: spacing.md,
+    paddingRight: spacing.lg,
+  },
+  signupButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  signupButtonDisabled: {
+    opacity: 0.6,
+  },
+  signupButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loginButton: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  loginButtonText: {
+    fontSize: 14,
+    color: colors.gray500,
+  },
+  loginButtonTextBold: {
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  terms: {
+    fontSize: 12,
+    color: colors.gray400,
+    textAlign: 'center',
+    marginTop: spacing.xxl,
+    lineHeight: 18,
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xxl,
+    gap: spacing.md,
+  },
+  footerLine: {
+    width: 60,
+    height: 1,
+    backgroundColor: colors.gray200,
+  },
+});
