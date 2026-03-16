@@ -1,5 +1,5 @@
 // app/receipt-detail.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -70,7 +70,7 @@ export default function ReceiptDetailScreen() {
 
       const cats = categoriesRes.data || [];
       const usageCount: Record<string, number> = {};
-      (usageRes.data || []).forEach((r: any) => {
+      (usageRes.data || []).forEach((r) => {
         usageCount[r.category] = (usageCount[r.category] || 0) + 1;
       });
 

@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
-  FlatList,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
