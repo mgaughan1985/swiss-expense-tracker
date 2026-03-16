@@ -154,8 +154,9 @@ export default function ExportScreen() {
       const periodLabel = selectedMonth === 'all'
         ? 'all-time'
         : (monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth)
-            .replace(' ', '-').toLowerCase();
+            .replace(/\s+/g, '-').toLowerCase();
       const fileName = `expenses-${periodLabel}-${selectedProfile.filenameSuffix}.csv`;
+      if (!FileSystem.cacheDirectory) throw new Error('Cache directory unavailable');
       const filePath = `${FileSystem.cacheDirectory}${fileName}`;
 
       await FileSystem.writeAsStringAsync(filePath, csvContent, {

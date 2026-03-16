@@ -53,7 +53,7 @@ export default function LoginScreen() {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(
         email.trim().toLowerCase(),
-        { redirectTo: 'https://example.com/auth/callback' }
+        { redirectTo: 'expensetracker://auth/callback' }
       );
       if (error) {
         Alert.alert('Error', error.message);
