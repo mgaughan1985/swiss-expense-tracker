@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { View, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { initialiseSentry, setSentryUser, clearSentryUser } from '../lib/sentry';
+
+initialiseSentry();
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
@@ -20,14 +23,17 @@ export default function RootLayout() {
       clearTimeout(timeout);
 
       if (session) {
-        // Check whether the user opted out of staying signed in
         const keepSignedIn = await AsyncStorage.getItem('keepSignedIn');
         if (keepSignedIn === 'false') {
-          // They chose not to persist — sign them out silently and go to login
           await supabase.auth.signOut();
           setSession(null);
         } else {
           setSession(session);
+          if (session?.user) {
+            setSentryUser(session.user.id);
+          } else {
+            clearSentryUser();
+          }
         }
       } else {
         setSession(null);
@@ -38,6 +44,11 @@ export default function RootLayout() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.user) {
+        setSentryUser(session.user.id);
+      } else {
+        clearSentryUser();
+      }
     });
 
     return () => {
