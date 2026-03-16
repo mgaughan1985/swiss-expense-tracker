@@ -10,6 +10,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import { getErrorMessage } from '@/lib/withRetry';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { Download, Calendar, ChevronDown, Globe } from 'lucide-react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -51,6 +53,7 @@ export default function ExportScreen() {
   const [selectedProfileId, setSelectedProfileId] = useState<string>(DEFAULT_PROFILE_ID);
   const [showProfilePicker, setShowProfilePicker] = useState(false);
   const [taxDeductibleCats, setTaxDeductibleCats] = useState<Set<string>>(new Set());
+  const [banner, setBanner] = useState<{ type: 'error' | 'warning'; message: string } | null>(null);
 
   const selectedProfile: ExportProfile =
     EXPORT_PROFILES.find(p => p.id === selectedProfileId) ?? EXPORT_PROFILES[0];
@@ -134,6 +137,7 @@ export default function ExportScreen() {
       return;
     }
 
+    setBanner(null);
     setExporting(true);
     try {
       // Generate signed URLs for all receipt images
@@ -149,6 +153,8 @@ export default function ExportScreen() {
           return { ...r, imageUrl };
         })
       );
+
+      const failedUrls = rowsWithUrls.filter(r => r.image_path && !r.imageUrl).length;
 
       // Use selected profile to build headers and rows
       const { headers, mapRow } = selectedProfile;
@@ -176,9 +182,16 @@ export default function ExportScreen() {
         dialogTitle: `Export for ${selectedProfile.software}`,
         UTI: 'public.comma-separated-values-text',
       });
+
+      if (failedUrls > 0) {
+        setBanner({
+          type: 'warning',
+          message: `${failedUrls} receipt image ${failedUrls === 1 ? 'link' : 'links'} could not be generated and will be blank in the CSV.`,
+        });
+      }
     } catch (error) {
       console.error('Export error:', error);
-      Alert.alert('Export Failed', 'Could not export receipts. Please try again.');
+      setBanner({ type: 'error', message: getErrorMessage(error) });
     } finally {
       setExporting(false);
     }
@@ -211,6 +224,14 @@ export default function ExportScreen() {
           <Text style={styles.headerTitle}>Export Data</Text>
         </View>
       </View>
+
+      {banner && (
+        <ErrorBanner
+          type={banner.type}
+          message={banner.message}
+          onRetry={banner.type === 'error' ? handleExportCSV : undefined}
+        />
+      )}
 
       <ScrollView
         style={styles.content}
