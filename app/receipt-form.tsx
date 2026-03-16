@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { withRetry, getErrorMessage } from '@/lib/withRetry';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ArrowLeft, Calendar, Save } from 'lucide-react-native';
 import type { Category } from '@/types/database';
@@ -44,6 +46,7 @@ export default function ReceiptFormScreen() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [banner, setBanner] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   // Autocomplete state
   const [supplierSuggestions, setSupplierSuggestions] = useState<string[]>([]);
@@ -175,32 +178,33 @@ export default function ReceiptFormScreen() {
       return;
     }
 
+    setBanner(null);
     setIsSaving(true);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        Alert.alert('Authentication Error', 'Please log in to save receipts');
+        setBanner({ type: 'error', message: 'Your session has expired. Please sign in again.' });
         return;
       }
 
-      const { error } = await supabase.from('receipts').insert({
-        user_id: user.id,
-        supplier: supplier.trim(),
-        receipt_date: receiptDate.toISOString().split('T')[0],
-        category: categoryToSave,
-        total_cost: cost,
-        image_path: imagePath || null,
-        notes: notes.trim() || null,
+      await withRetry(async () => {
+        const { error } = await supabase.from('receipts').insert({
+          user_id: user.id,
+          supplier: supplier.trim(),
+          receipt_date: receiptDate.toISOString().split('T')[0],
+          category: categoryToSave,
+          total_cost: cost,
+          image_path: imagePath || null,
+          notes: notes.trim() || null,
+        });
+        if (error) throw error;
       });
 
-      if (error) throw error;
-
-      Alert.alert('Success', 'Receipt saved successfully!', [
-        { text: 'OK', onPress: () => router.push('/(tabs)/home') },
-      ]);
+      setBanner({ type: 'success', message: 'Receipt saved successfully!' });
+      setTimeout(() => router.push('/(tabs)/home'), 2000);
     } catch (error) {
       console.error('Error saving receipt:', error);
-      Alert.alert('Error', 'Failed to save receipt. Please try again.');
+      setBanner({ type: 'error', message: getErrorMessage(error) });
     } finally {
       setIsSaving(false);
     }
@@ -257,6 +261,15 @@ export default function ReceiptFormScreen() {
         </View>
         <View style={styles.placeholder} />
       </View>
+
+      {banner && (
+        <ErrorBanner
+          type={banner.type}
+          message={banner.message}
+          onRetry={banner.type === 'error' ? handleSave : undefined}
+          dismissable={banner.type !== 'success'}
+        />
+      )}
 
       <ScrollView
         style={styles.content}
