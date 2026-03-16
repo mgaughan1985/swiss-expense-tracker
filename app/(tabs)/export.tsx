@@ -10,10 +10,11 @@ import {
   ScrollView,
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
-import { Download, Calendar, ChevronDown } from 'lucide-react-native';
+import { Download, Calendar, ChevronDown, Globe } from 'lucide-react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { EXPORT_PROFILES, DEFAULT_PROFILE_ID, ExportProfile } from '@/lib/exportProfiles';
 
 function SwissFlag({ size = 40 }: { size?: number }) {
   return (
@@ -47,6 +48,11 @@ export default function ExportScreen() {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [monthOptions, setMonthOptions] = useState<MonthOption[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string>(DEFAULT_PROFILE_ID);
+  const [showProfilePicker, setShowProfilePicker] = useState(false);
+
+  const selectedProfile: ExportProfile =
+    EXPORT_PROFILES.find(p => p.id === selectedProfileId) ?? EXPORT_PROFILES[0];
 
   useEffect(() => {
     loadReceipts();
@@ -122,6 +128,7 @@ export default function ExportScreen() {
 
     setExporting(true);
     try {
+      // Generate signed URLs for all receipt images
       const rowsWithUrls = await Promise.all(
         filtered.map(async r => {
           let imageUrl = '';
@@ -135,26 +142,20 @@ export default function ExportScreen() {
         })
       );
 
-      const headers = ['Date', 'Supplier', 'Category', 'Amount (CHF)', 'Notes', 'Receipt Image'];
-      const rows = rowsWithUrls.map(r => [
-        r.receipt_date,
-        r.supplier.replace(/"/g, '""'),
-        r.category,
-        r.total_cost.toFixed(2),
-        (r.notes || '').replace(/"/g, '""'),
-        r.imageUrl,
-      ]);
+      // Use selected profile to build headers and rows
+      const { headers, mapRow } = selectedProfile;
+      const rows = rowsWithUrls.map(r => mapRow(r));
 
       const csvContent = [
         headers.join(','),
-        ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
       ].join('\n');
 
       const periodLabel = selectedMonth === 'all'
         ? 'all-time'
         : (monthOptions.find(m => m.value === selectedMonth)?.label || selectedMonth)
             .replace(' ', '-').toLowerCase();
-      const fileName = `expenses-${periodLabel}.csv`;
+      const fileName = `expenses-${periodLabel}-${selectedProfile.filenameSuffix}.csv`;
       const filePath = `${FileSystem.cacheDirectory}${fileName}`;
 
       await FileSystem.writeAsStringAsync(filePath, csvContent, {
@@ -163,7 +164,7 @@ export default function ExportScreen() {
 
       await Sharing.shareAsync(filePath, {
         mimeType: 'text/csv',
-        dialogTitle: 'Export Expenses',
+        dialogTitle: `Export for ${selectedProfile.software}`,
         UTI: 'public.comma-separated-values-text',
       });
     } catch (error) {
@@ -202,14 +203,65 @@ export default function ExportScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
 
+        {/* ── Accounting Software Selector ─────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Accounting Software</Text>
+          <TouchableOpacity
+            style={styles.monthSelector}
+            onPress={() => {
+              setShowProfilePicker(!showProfilePicker);
+              setShowMonthPicker(false);
+            }}>
+            <Globe size={18} color="#DC2626" strokeWidth={2.5} />
+            <View style={styles.profileSelectorText}>
+              <Text style={styles.monthSelectorText}>{selectedProfile.label}</Text>
+              <Text style={styles.profileSubtext}>{selectedProfile.country} · {selectedProfile.currency}</Text>
+            </View>
+            <ChevronDown size={18} color="#6b7280" strokeWidth={2.5} />
+          </TouchableOpacity>
+
+          {showProfilePicker && (
+            <View style={styles.monthDropdown}>
+              {EXPORT_PROFILES.map(profile => (
+                <TouchableOpacity
+                  key={profile.id}
+                  style={[
+                    styles.monthOption,
+                    selectedProfileId === profile.id && styles.monthOptionActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedProfileId(profile.id);
+                    setShowProfilePicker(false);
+                  }}>
+                  <Text style={[
+                    styles.monthOptionText,
+                    selectedProfileId === profile.id && styles.monthOptionTextActive,
+                  ]}>
+                    {profile.label}
+                  </Text>
+                  <Text style={styles.profileOptionSubtext}>
+                    {profile.country} · {profile.currency}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* ── Period Selector ───────────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Export Period</Text>
           <TouchableOpacity
             style={styles.monthSelector}
-            onPress={() => setShowMonthPicker(!showMonthPicker)}>
+            onPress={() => {
+              setShowMonthPicker(!showMonthPicker);
+              setShowProfilePicker(false);
+            }}>
             <Calendar size={18} color="#DC2626" strokeWidth={2.5} />
             <Text style={styles.monthSelectorText}>{selectedLabel}</Text>
             <ChevronDown size={18} color="#6b7280" strokeWidth={2.5} />
@@ -231,6 +283,7 @@ export default function ExportScreen() {
           )}
         </View>
 
+        {/* ── Summary Card ─────────────────────────────────────────── */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
             <SwissFlag size={24} />
@@ -243,17 +296,18 @@ export default function ExportScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>CHF {stats.total.toFixed(2)}</Text>
+              <Text style={styles.statValue}>{selectedProfile.currency} {stats.total.toFixed(2)}</Text>
               <Text style={styles.statLabel}>Total</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={[styles.statValue, { color: '#DC2626' }]}>CHF {stats.taxDeductible.toFixed(2)}</Text>
+              <Text style={[styles.statValue, { color: '#DC2626' }]}>{selectedProfile.currency} {stats.taxDeductible.toFixed(2)}</Text>
               <Text style={styles.statLabel}>Tax Deduct.</Text>
             </View>
           </View>
         </View>
 
+        {/* ── Export Button ────────────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Export Options</Text>
           <TouchableOpacity
@@ -269,9 +323,11 @@ export default function ExportScreen() {
               <>
                 <Download size={24} color="#ffffff" strokeWidth={2.5} />
                 <View style={styles.exportButtonContent}>
-                  <Text style={styles.exportButtonText}>Export as CSV File</Text>
+                  <Text style={styles.exportButtonText}>
+                    Export for {selectedProfile.software}
+                  </Text>
                   <Text style={styles.exportButtonSubtext}>
-                    {stats.count} receipts · Save to Drive, email & more
+                    {stats.count} receipts · {selectedProfile.country} · {selectedProfile.currency}
                   </Text>
                 </View>
               </>
@@ -279,17 +335,13 @@ export default function ExportScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* ── Info Card ────────────────────────────────────────────── */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>About CSV Export</Text>
+          <Text style={styles.infoTitle}>
+            About {selectedProfile.software} Export ({selectedProfile.country})
+          </Text>
           <View style={styles.infoList}>
-            {[
-              'Exports as a proper .csv file attachment',
-              'Compatible with Excel, Google Sheets, and Numbers',
-              'Includes date, supplier, category, amount and notes',
-              'Receipt image links valid for 1 year',
-              'Filter by month or export everything at once',
-              'Perfect for tax filing and accountant submissions',
-            ].map((text, i) => (
+            {getProfileInfo(selectedProfile).map((text, i) => (
               <View key={i} style={styles.infoItem}>
                 <View style={styles.infoBullet} />
                 <Text style={styles.infoText}>{text}</Text>
@@ -306,6 +358,44 @@ export default function ExportScreen() {
       </ScrollView>
     </View>
   );
+}
+
+function getProfileInfo(profile: ExportProfile): string[] {
+  switch (profile.id) {
+    case 'bexio-ch':
+     return [
+    'Formatted as a bookkeeper reconciliation file for Bexio',
+    'Column order mirrors the Bexio expense entry screen',
+    'Date format: DD.MM.YYYY (Swiss standard)',
+    'Gross and Net calculated using Swiss VAT rates (8.1% standard)',
+    'Accounting account codes included for each category',
+    'Receipt image links valid for 1 year',
+  ];
+    case 'sage-ie':
+      return [
+        'Formatted for Sage Business Cloud (Ireland)',
+        'Date format: DD/MM/YYYY',
+        'VAT rates: T1 (23%), T0 (zero/exempt)',
+        'Net, Tax and Gross amounts calculated automatically',
+        'Import via Sage → Purchases → Import',
+        'Receipt image links valid for 1 year',
+      ];
+    case 'sage-uk':
+      return [
+        'Formatted for Sage Business Cloud (United Kingdom)',
+        'Date format: DD/MM/YYYY',
+        'VAT rates: T1 (20%), T5 (5%), T0 (zero/exempt)',
+        'Net, Tax and Gross amounts calculated automatically',
+        'Import via Sage → Purchases → Import',
+        'Receipt image links valid for 1 year',
+      ];
+    default:
+      return [
+        'Exports as a proper .csv file attachment',
+        'Compatible with Excel, Google Sheets, and Numbers',
+        'Receipt image links valid for 1 year',
+      ];
+  }
 }
 
 const styles = StyleSheet.create({
@@ -328,7 +418,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb', borderRadius: 10, padding: 14,
     borderWidth: 1, borderColor: '#e5e7eb',
   },
-  monthSelectorText: { flex: 1, fontSize: 15, fontWeight: '600', color: '#111827' },
+  profileSelectorText: { flex: 1 },
+  monthSelectorText: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  profileSubtext: { fontSize: 12, color: '#6b7280', fontWeight: '500', marginTop: 1 },
   monthDropdown: {
     backgroundColor: '#ffffff', borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb',
     marginTop: 4, overflow: 'hidden',
@@ -339,6 +431,7 @@ const styles = StyleSheet.create({
   monthOptionActive: { backgroundColor: '#fef2f2' },
   monthOptionText: { fontSize: 15, color: '#374151', fontWeight: '500' },
   monthOptionTextActive: { color: '#DC2626', fontWeight: '700' },
+  profileOptionSubtext: { fontSize: 12, color: '#9ca3af', fontWeight: '400', marginTop: 2 },
   summaryCard: {
     backgroundColor: '#f9fafb', borderRadius: 12, padding: 20,
     marginBottom: 24, borderWidth: 1, borderColor: '#e5e7eb',

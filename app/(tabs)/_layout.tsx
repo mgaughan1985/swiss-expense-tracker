@@ -1,7 +1,24 @@
-import { Tabs } from 'expo-router';
+import { useEffect } from 'react';
+import { BackHandler } from 'react-native';
+import { Tabs, useSegments } from 'expo-router';
 import { Home, Camera, Receipt, Download } from 'lucide-react-native';
 
 export default function TabLayout() {
+  const segments = useSegments();
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // When on any main tab, exit the app instead of navigating back through the stack
+      if (segments[0] === '(tabs)') {
+        BackHandler.exitApp();
+        return true;
+      }
+      return false;
+    });
+
+    return () => backHandler.remove();
+  }, [segments]);
+
   return (
     <Tabs
       screenOptions={{

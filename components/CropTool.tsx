@@ -70,6 +70,7 @@ interface Props {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const HANDLE_HIT_SLOP = 20;        // px either side of the edge line that counts as a touch
+const TOP_SAFE_ZONE   = 50;        // clears Android notification shade gesture zone
 const MIN_CROP_SIZE   = 60;        // minimum crop dimension in px
 const HANDLE_COLOR    = '#FFFFFF';
 const OVERLAY_COLOR   = 'rgba(0, 0, 0, 0.55)';
@@ -193,13 +194,13 @@ export default function CropTool({ imageUri, onCrop, onCancel }: Props) {
     <View style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-      {/* Black spacer — gives the top edge handle room to render above the image container
-         without being clipped. Height matches HANDLE_HIT_SLOP exactly. */}
-      <View style={{ height: HANDLE_HIT_SLOP, backgroundColor: '#000' }} />
+      {/* Safe zone spacer — keeps the top edge handle clear of Android's
+          notification shade gesture zone so drags aren't intercepted. */}
+      <View style={{ height: TOP_SAFE_ZONE, backgroundColor: '#000' }} />
 
       {/* ── Image + crop overlay ─────────────────────────────────────── */}
       <View
-        style={[styles.imageContainer, { height: availableH - HANDLE_HIT_SLOP }]}
+        style={[styles.imageContainer, { height: availableH - TOP_SAFE_ZONE }]}
         onLayout={onContainerLayout}
       >
         <Image
@@ -385,8 +386,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderWidth: EDGE_THICK,
     borderColor: 'rgba(255,255,255,0.7)',
-    // Dashed border via borderStyle isn't reliable cross-platform
-    // so we use a solid thin line here; the corner marks carry the visual weight
   },
 
   // Edge handle containers
@@ -409,7 +408,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: EDGE_THICK,
-    backgroundColor: 'transparent', // border already drawn by cropBorder
+    backgroundColor: 'transparent',
   },
   edgeBarV: {
     position: 'absolute',
@@ -428,7 +427,7 @@ const styles = StyleSheet.create({
   // ── Ribbon ───────────────────────────────────────────────────────────────
   ribbon: {
     height: RIBBON_HEIGHT,
-    backgroundColor: '#1A1A2E',   // dark navy — matches typical Bolt dark theme
+    backgroundColor: '#1A1A2E',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -463,7 +462,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: '#4F46E5',   // indigo — swap for your brand primary
+    backgroundColor: '#DC2626',
     minWidth: 90,
     alignItems: 'center',
   },
