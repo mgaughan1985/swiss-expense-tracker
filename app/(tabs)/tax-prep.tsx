@@ -81,10 +81,17 @@ export default function TaxPrepScreen() {
   async function loadData() {
     setLoading(true);
     try {
+      const catsRes = await supabase
+        .from('categories')
+        .select('name, tax_deductible')
+        .eq('is_active', true);
+      const taxCats = new Set<string>(
+        (catsRes.data || []).filter(c => c.tax_deductible).map(c => c.name)
+      );
       await Promise.all([
         loadWFHDays(),
         loadChecklist(),
-        loadReceiptStats(),
+        loadReceiptStats(taxCats),
       ]);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -140,7 +147,7 @@ export default function TaxPrepScreen() {
     }
   }
 
-  async function loadReceiptStats() {
+  async function loadReceiptStats(taxCats: Set<string>) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -153,8 +160,7 @@ export default function TaxPrepScreen() {
       if (error) throw error;
 
       const total = data?.reduce((sum, r) => sum + r.total_cost, 0) || 0;
-      const taxDeductibleCategories = ['Meals', 'Transport', 'Accommodation', 'Office Supplies', 'Communication', 'Parking', 'Fuel'];
-      const taxDeductible = data?.filter(r => taxDeductibleCategories.includes(r.category))
+      const taxDeductible = data?.filter(r => taxCats.has(r.category))
         .reduce((sum, r) => sum + r.total_cost, 0) || 0;
 
       const byCategory: { [key: string]: number } = {};

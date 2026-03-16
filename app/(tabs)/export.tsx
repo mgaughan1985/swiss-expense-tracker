@@ -50,6 +50,7 @@ export default function ExportScreen() {
   const [monthOptions, setMonthOptions] = useState<MonthOption[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string>(DEFAULT_PROFILE_ID);
   const [showProfilePicker, setShowProfilePicker] = useState(false);
+  const [taxDeductibleCats, setTaxDeductibleCats] = useState<Set<string>>(new Set());
 
   const selectedProfile: ExportProfile =
     EXPORT_PROFILES.find(p => p.id === selectedProfileId) ?? EXPORT_PROFILES[0];
@@ -63,15 +64,21 @@ export default function ExportScreen() {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) return;
 
-      const { data, error } = await supabase
-        .from('receipts')
-        .select('id, supplier, receipt_date, category, total_cost, notes, image_path, created_at')
-        .eq('user_id', user.id)
-        .order('receipt_date', { ascending: false });
+      const [receiptsRes, catsRes] = await Promise.all([
+        supabase
+          .from('receipts')
+          .select('id, supplier, receipt_date, category, total_cost, notes, image_path, created_at')
+          .eq('user_id', user.id)
+          .order('receipt_date', { ascending: false }),
+        supabase.from('categories').select('name, tax_deductible').eq('is_active', true),
+      ]);
 
-      if (error) throw error;
+      if (receiptsRes.error) throw receiptsRes.error;
 
-      const loaded = data || [];
+      const loaded = receiptsRes.data || [];
+      setTaxDeductibleCats(new Set(
+        (catsRes.data || []).filter(c => c.tax_deductible).map(c => c.name)
+      ));
       setReceipts(loaded);
 
       const seen = new Set<string>();
@@ -106,11 +113,10 @@ export default function ExportScreen() {
     });
   }
 
-  function getStats(data: ReceiptData[]) {
+  function getStats(data: ReceiptData[], deductibleCats: Set<string>) {
     const total = data.reduce((sum, r) => sum + r.total_cost, 0);
-    const taxDeductibleCategories = ['Meals', 'Transport', 'Accommodation', 'Office Supplies', 'Communication', 'Parking', 'Fuel'];
     const taxDeductible = data
-      .filter(r => taxDeductibleCategories.includes(r.category))
+      .filter(r => deductibleCats.has(r.category))
       .reduce((sum, r) => sum + r.total_cost, 0);
     return { total, taxDeductible, count: data.length };
   }
@@ -179,7 +185,7 @@ export default function ExportScreen() {
   }
 
   const filtered = getFilteredReceipts();
-  const stats = getStats(filtered);
+  const stats = getStats(filtered, taxDeductibleCats);
   const selectedLabel = monthOptions.find(m => m.value === selectedMonth)?.label || 'All Time';
 
   if (loading) {
