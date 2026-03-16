@@ -77,7 +77,8 @@ export default function ExportScreen() {
       const seen = new Set<string>();
       const options: MonthOption[] = [{ label: 'All Time', value: 'all' }];
       loaded.forEach(r => {
-        const d = new Date(r.receipt_date);
+        const [ey, em, ed] = r.receipt_date.split('-').map(Number);
+        const d = new Date(ey, em - 1, ed);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (!seen.has(key)) {
           seen.add(key);
@@ -98,7 +99,8 @@ export default function ExportScreen() {
   function getFilteredReceipts(): ReceiptData[] {
     if (selectedMonth === 'all') return receipts;
     return receipts.filter(r => {
-      const d = new Date(r.receipt_date);
+      const [fy, fm, fd] = r.receipt_date.split('-').map(Number);
+      const d = new Date(fy, fm - 1, fd);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       return key === selectedMonth;
     });

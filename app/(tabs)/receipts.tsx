@@ -45,7 +45,8 @@ function groupByMonth(receipts: ReceiptItem[]): MonthSection[] {
   const map: Record<string, MonthSection> = {};
 
   receipts.forEach(r => {
-    const date = new Date(r.receipt_date);
+    const [ry, rm, rd] = r.receipt_date.split('-').map(Number);
+    const date = new Date(ry, rm - 1, rd);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     const title = date.toLocaleString('default', { month: 'long', year: 'numeric' });
 
@@ -140,7 +141,8 @@ export default function ReceiptsScreen() {
   }
 
   function renderItem({ item }: { item: ReceiptItem }) {
-    const date = new Date(item.receipt_date);
+    const [iy, im, id] = item.receipt_date.split('-').map(Number);
+    const date = new Date(iy, im - 1, id);
     const formattedDate = date.toLocaleDateString('en-CH', {
       day: '2-digit',
       month: 'short',

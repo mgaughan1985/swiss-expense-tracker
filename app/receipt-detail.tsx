@@ -100,7 +100,8 @@ export default function ReceiptDetailScreen() {
       if (data) {
         setReceipt(data);
         setSupplier(data.supplier);
-        setReceiptDate(new Date(data.receipt_date));
+        const [ry, rm, rd] = data.receipt_date.split('-').map(Number);
+        setReceiptDate(new Date(ry, rm - 1, rd));
         setCategory(data.category);
         setTotalCost(data.total_cost.toString());
         setNotes(data.notes || '');
@@ -188,7 +189,8 @@ export default function ReceiptDetailScreen() {
   function handleCancel() {
     if (!receipt) return;
     setSupplier(receipt.supplier);
-    setReceiptDate(new Date(receipt.receipt_date));
+    const [cy, cm, cd] = receipt.receipt_date.split('-').map(Number);
+    setReceiptDate(new Date(cy, cm - 1, cd));
     setCategory(receipt.category);
     setTotalCost(receipt.total_cost.toString());
     setNotes(receipt.notes || '');
@@ -384,9 +386,7 @@ export default function ReceiptDetailScreen() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Date</Text>
                 <Text style={styles.detailValue}>
-                  {new Date(receipt.receipt_date).toLocaleDateString('en-CH', {
-                    day: '2-digit', month: 'long', year: 'numeric',
-                  })}
+                  {(() => { const [y,m,d] = receipt.receipt_date.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString('en-CH', { day: '2-digit', month: 'long', year: 'numeric' }); })()}
                 </Text>
               </View>
 
