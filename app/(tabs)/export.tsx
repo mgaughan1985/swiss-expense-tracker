@@ -34,6 +34,7 @@ interface ReceiptData {
   category: string;
   total_cost: number;
   notes: string | null;
+  project_notes: string | null;
   image_path: string | null;
   created_at: string;
 }
@@ -70,7 +71,7 @@ export default function ExportScreen() {
       const [receiptsRes, catsRes] = await Promise.all([
         supabase
           .from('receipts')
-          .select('id, supplier, receipt_date, category, total_cost, notes, image_path, created_at')
+          .select('id, supplier, receipt_date, category, total_cost, notes, project_notes, image_path, created_at')
           .eq('user_id', user.id)
           .order('receipt_date', { ascending: false }),
         supabase.from('categories').select('name, tax_deductible').eq('is_active', true),

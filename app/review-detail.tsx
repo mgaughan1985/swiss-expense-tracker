@@ -1,4 +1,7 @@
-// app/receipt-detail.tsx
+// app/review-detail.tsx
+// Manager screen for reviewing a single submitted receipt.
+// Supports: Approve, Reject (with reason), Edit & Approve.
+
 import { useState, useEffect } from 'react';
 import {
   View,
@@ -19,7 +22,7 @@ import { ErrorBanner } from '@/components/ErrorBanner';
 import { Receipt } from '@/types/database';
 import type { Category } from '@/types/database';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { ArrowLeft, Edit, Trash2, Save, X, Calendar, Send, RotateCcw } from 'lucide-react-native';
+import { ArrowLeft, Check, X, Edit, Save, Calendar } from 'lucide-react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
 function SwissFlag({ size = 40 }: { size?: number }) {
@@ -31,35 +34,32 @@ function SwissFlag({ size = 40 }: { size?: number }) {
   );
 }
 
-const STATUS_CONFIG: Record<string, { label: string; bg: string; border: string; text: string }> = {
-  draft:     { label: 'Draft',     bg: '#f3f4f6', border: '#d1d5db', text: '#6b7280' },
-  submitted: { label: 'Submitted', bg: '#fffbeb', border: '#fde68a', text: '#92400e' },
-  approved:  { label: 'Approved',  bg: '#f0fdf4', border: '#bbf7d0', text: '#166534' },
-  rejected:  { label: 'Rejected',  bg: '#fef2f2', border: '#fecaca', text: '#991b1b' },
-};
+type Mode = 'view' | 'edit' | 'reject';
 
-export default function ReceiptDetailScreen() {
+export default function ReviewDetailScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
   const receiptId = params.id as string;
 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mode, setMode] = useState<Mode>('view');
+  const [saving, setSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [banner, setBanner] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Editable fields
+  // Editable fields (used in edit mode)
   const [supplier, setSupplier] = useState('');
   const [receiptDate, setReceiptDate] = useState(new Date());
   const [category, setCategory] = useState('');
   const [totalCost, setTotalCost] = useState('');
   const [notes, setNotes] = useState('');
   const [projectNotes, setProjectNotes] = useState('');
+
+  // Reject mode field
+  const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
     loadReceipt();
@@ -68,31 +68,9 @@ export default function ReceiptDetailScreen() {
 
   async function loadCategories() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const [categoriesRes, usageRes] = await Promise.all([
-        supabase.from('categories').select('*').eq('is_active', true),
-        user
-          ? supabase.from('receipts').select('category').eq('user_id', user.id)
-          : Promise.resolve({ data: [] }),
-      ]);
-
-      if (categoriesRes.error) throw categoriesRes.error;
-
-      const cats = categoriesRes.data || [];
-      const usageCount: Record<string, number> = {};
-      (usageRes.data || []).forEach((r) => {
-        usageCount[r.category] = (usageCount[r.category] || 0) + 1;
-      });
-
-      const sorted = [...cats].sort((a, b) => {
-        const aCount = usageCount[a.name] || 0;
-        const bCount = usageCount[b.name] || 0;
-        if (bCount !== aCount) return bCount - aCount;
-        return a.name.localeCompare(b.name);
-      });
-
-      setCategories(sorted);
+      const { data, error } = await supabase.from('categories').select('*').eq('is_active', true);
+      if (error) throw error;
+      setCategories((data || []).sort((a, b) => a.name.localeCompare(b.name)));
     } catch (error) {
       console.error('Error loading categories:', error);
     }
@@ -107,7 +85,6 @@ export default function ReceiptDetailScreen() {
         .single();
 
       if (error) throw error;
-
       if (data) {
         setReceipt(data);
         setSupplier(data.supplier);
@@ -119,26 +96,90 @@ export default function ReceiptDetailScreen() {
         setProjectNotes(data.project_notes || '');
       }
     } catch (error) {
-      console.error('Error loading receipt:', error);
-      Alert.alert('Error', 'Failed to load receipt details');
+      console.error('Error loading receipt for review:', error);
+      Alert.alert('Error', 'Failed to load receipt');
       router.back();
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleSave() {
+  async function handleApprove() {
+    Alert.alert('Approve Receipt', 'Mark this receipt as approved?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Approve',
+        onPress: async () => {
+          setBanner(null);
+          setSaving(true);
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Not authenticated');
+
+            const now = new Date().toISOString();
+            await withRetry(async () => {
+              const { error } = await supabase
+                .from('receipts')
+                .update({ status: 'approved', reviewed_by: user.id, reviewed_at: now })
+                .eq('id', receiptId);
+              if (error) throw error;
+            });
+            router.back();
+          } catch (error) {
+            console.error('Approve error:', error);
+            setBanner({ type: 'error', message: getErrorMessage(error) });
+          } finally {
+            setSaving(false);
+          }
+        },
+      },
+    ]);
+  }
+
+  async function handleConfirmReject() {
+    if (!rejectionReason.trim()) {
+      Alert.alert('Reason Required', 'Please enter a rejection reason before confirming.');
+      return;
+    }
+
+    setBanner(null);
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const now = new Date().toISOString();
+      await withRetry(async () => {
+        const { error } = await supabase
+          .from('receipts')
+          .update({
+            status: 'rejected',
+            rejection_reason: rejectionReason.trim(),
+            reviewed_by: user.id,
+            reviewed_at: now,
+          })
+          .eq('id', receiptId);
+        if (error) throw error;
+      });
+      router.back();
+    } catch (error) {
+      console.error('Reject error:', error);
+      setBanner({ type: 'error', message: getErrorMessage(error) });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSaveAndApprove() {
     if (!supplier.trim()) {
       Alert.alert('Error', 'Please enter a supplier name');
       return;
     }
-
     const cost = parseFloat(totalCost);
     if (isNaN(cost) || cost <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
     }
-
     const categoryToSave = category || (categories.length > 0 ? categories[0].name : '');
     if (!categoryToSave) {
       Alert.alert('Error', 'Please select a category');
@@ -146,8 +187,12 @@ export default function ReceiptDetailScreen() {
     }
 
     setBanner(null);
-    setIsSaving(true);
+    setSaving(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const now = new Date().toISOString();
       await withRetry(async () => {
         const { error } = await supabase
           .from('receipts')
@@ -158,132 +203,25 @@ export default function ReceiptDetailScreen() {
             total_cost: cost,
             notes: notes.trim() || null,
             project_notes: projectNotes.trim() || null,
+            status: 'approved',
+            reviewed_by: user.id,
+            reviewed_at: now,
+            edited_by: user.id,
+            edited_at: now,
           })
           .eq('id', receiptId);
         if (error) throw error;
       });
-
-      setBanner({ type: 'success', message: 'Receipt updated successfully.' });
-      setIsEditing(false);
-      await loadReceipt();
+      router.back();
     } catch (error) {
-      console.error('Error updating receipt:', error);
+      console.error('Save & approve error:', error);
       setBanner({ type: 'error', message: getErrorMessage(error) });
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   }
 
-  async function handleSubmit() {
-    Alert.alert(
-      'Submit for Review',
-      'Submit this receipt for manager review? You won\'t be able to edit it while it\'s under review.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Submit',
-          onPress: async () => {
-            setBanner(null);
-            setIsSubmitting(true);
-            try {
-              await withRetry(async () => {
-                const { error } = await supabase
-                  .from('receipts')
-                  .update({
-                    status: 'submitted',
-                    submitted_at: new Date().toISOString(),
-                  })
-                  .eq('id', receiptId);
-                if (error) throw error;
-              });
-              await loadReceipt();
-              setBanner({ type: 'success', message: 'Receipt submitted for review.' });
-            } catch (error) {
-              console.error('Error submitting receipt:', error);
-              setBanner({ type: 'error', message: getErrorMessage(error) });
-            } finally {
-              setIsSubmitting(false);
-            }
-          },
-        },
-      ]
-    );
-  }
-
-  async function handleResubmit() {
-    Alert.alert(
-      'Resubmit Receipt',
-      'This will reset the receipt to draft so you can edit and resubmit it.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset to Draft',
-          onPress: async () => {
-            setBanner(null);
-            setIsSubmitting(true);
-            try {
-              await withRetry(async () => {
-                const { error } = await supabase
-                  .from('receipts')
-                  .update({
-                    status: 'draft',
-                    rejection_reason: null,
-                  })
-                  .eq('id', receiptId);
-                if (error) throw error;
-              });
-              await loadReceipt();
-            } catch (error) {
-              console.error('Error resubmitting receipt:', error);
-              setBanner({ type: 'error', message: getErrorMessage(error) });
-            } finally {
-              setIsSubmitting(false);
-            }
-          },
-        },
-      ]
-    );
-  }
-
-  async function handleDelete() {
-    Alert.alert(
-      'Delete Receipt',
-      'Are you sure you want to delete this receipt? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (receipt?.image_path) {
-                await supabase.storage.from('receipts').remove([receipt.image_path]);
-              }
-              const { error } = await supabase.from('receipts').delete().eq('id', receiptId);
-              if (error) throw error;
-              router.back();
-            } catch (error) {
-              console.error('Error deleting receipt:', error);
-              Alert.alert('Error', 'Failed to delete receipt');
-            }
-          },
-        },
-      ]
-    );
-  }
-
-  function handleCancel() {
-    if (!receipt) return;
-    setSupplier(receipt.supplier);
-    const [cy, cm, cd] = receipt.receipt_date.split('-').map(Number);
-    setReceiptDate(new Date(cy, cm - 1, cd));
-    setCategory(receipt.category);
-    setTotalCost(receipt.total_cost.toString());
-    setNotes(receipt.notes || '');
-    setProjectNotes(receipt.project_notes || '');
-    setBanner(null);
-    setIsEditing(false);
-  }
+  // ── Image ──────────────────────────────────────────────────────────────────
 
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -301,6 +239,8 @@ export default function ReceiptDetailScreen() {
     loadImage();
   }, [receipt?.image_path]);
 
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -313,18 +253,9 @@ export default function ReceiptDetailScreen() {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>Receipt not found</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-          <Text style={styles.buttonText}>Go Back</Text>
-        </TouchableOpacity>
       </View>
     );
   }
-
-  const status = receipt.status || 'draft';
-  const statusConfig = STATUS_CONFIG[status] ?? STATUS_CONFIG.draft;
-  const canEdit = status === 'draft' || status === 'rejected';
-  const canSubmit = status === 'draft' && !!receipt.organisation_id;
-  const canResubmit = status === 'rejected';
 
   return (
     <View style={styles.container}>
@@ -335,28 +266,18 @@ export default function ReceiptDetailScreen() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <SwissFlag size={28} />
-          <Text style={styles.headerTitle}>Receipt Details</Text>
+          <Text style={styles.headerTitle}>
+            {mode === 'edit' ? 'Edit & Approve' : mode === 'reject' ? 'Reject Receipt' : 'Review Receipt'}
+          </Text>
         </View>
-        <View style={styles.headerActions}>
-          {!isEditing && canEdit && (
-            <>
-              <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.iconButton}>
-                <Edit size={22} color="#DC2626" strokeWidth={2.5} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
-                <Trash2 size={22} color="#6b7280" strokeWidth={2.5} />
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+        <View style={{ width: 40 }} />
       </View>
 
       {banner && (
         <ErrorBanner
           type={banner.type}
           message={banner.message}
-          onRetry={banner.type === 'error' ? handleSave : undefined}
-          dismissable={banner.type !== 'success'}
+          dismissable
         />
       )}
 
@@ -370,23 +291,22 @@ export default function ReceiptDetailScreen() {
           </View>
         )}
 
+        {/* ── View / Edit fields ───────────────────────────────────────── */}
         <View style={styles.section}>
-          {isEditing ? (
+          {mode === 'edit' ? (
             <>
-              {/* Supplier */}
               <View style={styles.field}>
                 <Text style={styles.label}>Supplier <Text style={styles.required}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   value={supplier}
                   onChangeText={setSupplier}
-                  placeholder="e.g., Coop, Migros, SBB"
+                  placeholder="Supplier name"
                   placeholderTextColor="#9ca3af"
                   autoCapitalize="words"
                 />
               </View>
 
-              {/* Date */}
               <View style={styles.field}>
                 <Text style={styles.label}>Date <Text style={styles.required}>*</Text></Text>
                 <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
@@ -409,11 +329,9 @@ export default function ReceiptDetailScreen() {
                 )}
               </View>
 
-              {/* Category */}
               <View style={styles.field}>
                 <Text style={styles.label}>Category <Text style={styles.required}>*</Text></Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                  style={styles.categoryScroll}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
                   <View style={styles.categoryGrid}>
                     {categories.map((cat) => (
                       <TouchableOpacity
@@ -429,7 +347,6 @@ export default function ReceiptDetailScreen() {
                 </ScrollView>
               </View>
 
-              {/* Amount */}
               <View style={styles.field}>
                 <Text style={styles.label}>Total Amount <Text style={styles.required}>*</Text></Text>
                 <View style={styles.amountInputContainer}>
@@ -445,7 +362,6 @@ export default function ReceiptDetailScreen() {
                 </View>
               </View>
 
-              {/* Notes */}
               <View style={styles.field}>
                 <Text style={styles.label}>Notes (Optional)</Text>
                 <TextInput
@@ -460,7 +376,6 @@ export default function ReceiptDetailScreen() {
                 />
               </View>
 
-              {/* Client / Project */}
               <View style={styles.field}>
                 <Text style={styles.label}>Client / Project (Optional)</Text>
                 <TextInput
@@ -472,121 +387,156 @@ export default function ReceiptDetailScreen() {
                   autoCapitalize="sentences"
                 />
               </View>
-
-              {/* Action Buttons */}
-              <View style={styles.actionButtons}>
-                <TouchableOpacity style={[styles.actionButton, styles.cancelButton]} onPress={handleCancel}>
-                  <X size={18} color="#6b7280" strokeWidth={2.5} />
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.saveButton, isSaving && styles.saveButtonDisabled]}
-                  onPress={handleSave}
-                  disabled={isSaving}>
-                  {isSaving
-                    ? <ActivityIndicator size="small" color="#ffffff" />
-                    : <>
-                        <Save size={18} color="#ffffff" strokeWidth={2.5} />
-                        <Text style={styles.saveButtonText}>Save Changes</Text>
-                      </>}
-                </TouchableOpacity>
-              </View>
             </>
           ) : (
             <>
-              {/* Status pill */}
-              <View style={styles.statusRow}>
-                <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg, borderColor: statusConfig.border }]}>
-                  <Text style={[styles.statusText, { color: statusConfig.text }]}>{statusConfig.label}</Text>
-                </View>
-              </View>
-
-              {/* Rejection reason banner */}
-              {status === 'rejected' && receipt.rejection_reason ? (
-                <View style={styles.rejectionCard}>
-                  <Text style={styles.rejectionTitle}>Rejection Reason</Text>
-                  <Text style={styles.rejectionText}>{receipt.rejection_reason}</Text>
-                </View>
-              ) : null}
-
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Supplier</Text>
                 <Text style={styles.detailValue}>{receipt.supplier}</Text>
               </View>
-
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Date</Text>
                 <Text style={styles.detailValue}>
                   {(() => { const [y,m,d] = receipt.receipt_date.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString('en-CH', { day: '2-digit', month: 'long', year: 'numeric' }); })()}
                 </Text>
               </View>
-
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Category</Text>
                 <View style={styles.categoryBadge}>
                   <Text style={styles.categoryBadgeText}>{receipt.category}</Text>
                 </View>
               </View>
-
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Total Amount</Text>
                 <Text style={styles.amountValue}>CHF {receipt.total_cost.toFixed(2)}</Text>
               </View>
-
               {receipt.notes ? (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Notes</Text>
                   <Text style={styles.notesValue}>{receipt.notes}</Text>
                 </View>
               ) : null}
-
               {receipt.project_notes ? (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Client / Project</Text>
-                  <Text style={styles.notesValue}>{receipt.project_notes}</Text>
+                  <Text style={[styles.notesValue, styles.projectNotesValue]}>{receipt.project_notes}</Text>
                 </View>
               ) : null}
-
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Created</Text>
-                <Text style={styles.detailValue}>
-                  {new Date(receipt.created_at).toLocaleDateString('en-CH', {
-                    day: '2-digit', month: 'short', year: 'numeric',
-                  })}
-                </Text>
-              </View>
-
-              {/* Submit / Resubmit actions */}
-              {canSubmit && (
-                <TouchableOpacity
-                  style={[styles.submitButton, isSubmitting && styles.saveButtonDisabled]}
-                  onPress={handleSubmit}
-                  disabled={isSubmitting}>
-                  {isSubmitting
-                    ? <ActivityIndicator size="small" color="#ffffff" />
-                    : <>
-                        <Send size={18} color="#ffffff" strokeWidth={2.5} />
-                        <Text style={styles.submitButtonText}>Submit for Review</Text>
-                      </>}
-                </TouchableOpacity>
-              )}
-
-              {canResubmit && (
-                <TouchableOpacity
-                  style={[styles.resubmitButton, isSubmitting && styles.saveButtonDisabled]}
-                  onPress={handleResubmit}
-                  disabled={isSubmitting}>
-                  {isSubmitting
-                    ? <ActivityIndicator size="small" color="#92400e" />
-                    : <>
-                        <RotateCcw size={18} color="#92400e" strokeWidth={2.5} />
-                        <Text style={styles.resubmitButtonText}>Reset to Draft &amp; Edit</Text>
-                      </>}
-                </TouchableOpacity>
-              )}
+              {receipt.submitted_at ? (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Submitted</Text>
+                  <Text style={styles.detailValue}>
+                    {new Date(receipt.submitted_at).toLocaleDateString('en-CH', {
+                      day: '2-digit', month: 'short', year: 'numeric',
+                    })}
+                  </Text>
+                </View>
+              ) : null}
             </>
           )}
         </View>
+
+        {/* ── Reject reason input ──────────────────────────────────────── */}
+        {mode === 'reject' && (
+          <View style={styles.rejectSection}>
+            <Text style={styles.rejectSectionTitle}>Rejection Reason</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={rejectionReason}
+              onChangeText={setRejectionReason}
+              placeholder="Explain why this receipt is being rejected..."
+              placeholderTextColor="#9ca3af"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              autoFocus
+            />
+          </View>
+        )}
+
+        {/* ── Action buttons ───────────────────────────────────────────── */}
+        <View style={styles.actionsSection}>
+          {mode === 'view' && (
+            <>
+              <TouchableOpacity
+                style={[styles.approveButton, saving && styles.disabledButton]}
+                onPress={handleApprove}
+                disabled={saving}>
+                {saving
+                  ? <ActivityIndicator size="small" color="#ffffff" />
+                  : <>
+                      <Check size={20} color="#ffffff" strokeWidth={2.5} />
+                      <Text style={styles.approveButtonText}>Approve</Text>
+                    </>}
+              </TouchableOpacity>
+
+              <View style={styles.secondaryRow}>
+                <TouchableOpacity
+                  style={styles.editApproveButton}
+                  onPress={() => setMode('edit')}
+                  disabled={saving}>
+                  <Edit size={18} color="#DC2626" strokeWidth={2.5} />
+                  <Text style={styles.editApproveText}>Edit &amp; Approve</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.rejectButton}
+                  onPress={() => setMode('reject')}
+                  disabled={saving}>
+                  <X size={18} color="#6b7280" strokeWidth={2.5} />
+                  <Text style={styles.rejectButtonText}>Reject</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {mode === 'edit' && (
+            <View style={styles.editActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setMode('view')}
+                disabled={saving}>
+                <X size={18} color="#6b7280" strokeWidth={2.5} />
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.approveButton, { flex: 1 }, saving && styles.disabledButton]}
+                onPress={handleSaveAndApprove}
+                disabled={saving}>
+                {saving
+                  ? <ActivityIndicator size="small" color="#ffffff" />
+                  : <>
+                      <Save size={18} color="#ffffff" strokeWidth={2.5} />
+                      <Text style={styles.approveButtonText}>Save &amp; Approve</Text>
+                    </>}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {mode === 'reject' && (
+            <View style={styles.editActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => { setMode('view'); setRejectionReason(''); }}
+                disabled={saving}>
+                <X size={18} color="#6b7280" strokeWidth={2.5} />
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmRejectButton, { flex: 1 }, saving && styles.disabledButton]}
+                onPress={handleConfirmReject}
+                disabled={saving}>
+                {saving
+                  ? <ActivityIndicator size="small" color="#ffffff" />
+                  : <>
+                      <X size={18} color="#ffffff" strokeWidth={2.5} />
+                      <Text style={styles.approveButtonText}>Confirm Reject</Text>
+                    </>}
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         <View style={{ height: 60 }} />
       </ScrollView>
     </View>
@@ -596,6 +546,7 @@ export default function ReceiptDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' },
+  errorText: { fontSize: 18, color: '#6b7280' },
   header: {
     backgroundColor: '#ffffff',
     flexDirection: 'row',
@@ -610,8 +561,6 @@ const styles = StyleSheet.create({
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginLeft: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', letterSpacing: -0.3 },
-  headerActions: { flexDirection: 'row', gap: 4 },
-  iconButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   content: { flex: 1 },
   imageContainer: {
     backgroundColor: '#fef2f2', padding: 16,
@@ -619,20 +568,7 @@ const styles = StyleSheet.create({
   },
   image: { width: '100%', height: 280, borderRadius: 12, backgroundColor: '#f3f4f6' },
   section: { backgroundColor: '#ffffff', padding: 20, marginTop: 12 },
-  statusRow: { marginBottom: 16 },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12, paddingVertical: 5,
-    borderRadius: 20, borderWidth: 1,
-  },
-  statusText: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  rejectionCard: {
-    backgroundColor: '#fef2f2', borderRadius: 10, padding: 14,
-    borderWidth: 1, borderColor: '#fecaca', marginBottom: 16,
-  },
-  rejectionTitle: { fontSize: 12, fontWeight: '700', color: '#991b1b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  rejectionText: { fontSize: 15, color: '#7f1d1d', lineHeight: 22 },
-  field: { marginBottom: 24 },
+  field: { marginBottom: 20 },
   label: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 8, letterSpacing: -0.2 },
   required: { color: '#DC2626' },
   input: {
@@ -660,16 +596,6 @@ const styles = StyleSheet.create({
   },
   currencySymbol: { fontSize: 16, fontWeight: '700', color: '#DC2626', paddingLeft: 12, paddingRight: 8 },
   amountInput: { flex: 1, padding: 12, paddingLeft: 0, fontSize: 16, color: '#111827', fontWeight: '600' },
-  actionButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  actionButton: {
-    flex: 1, flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'center', paddingVertical: 14, borderRadius: 8, gap: 8,
-  },
-  cancelButton: { backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#d1d5db' },
-  cancelButtonText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
-  saveButton: { backgroundColor: '#DC2626' },
-  saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
   detailRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   detailLabel: { fontSize: 12, color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   detailValue: { fontSize: 16, color: '#111827', fontWeight: '500' },
@@ -681,18 +607,38 @@ const styles = StyleSheet.create({
   },
   categoryBadgeText: { fontSize: 14, color: '#DC2626', fontWeight: '600' },
   notesValue: { fontSize: 16, color: '#374151', lineHeight: 24 },
-  submitButton: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#DC2626', borderRadius: 8, paddingVertical: 14, marginTop: 20, gap: 8,
+  projectNotesValue: { color: '#DC2626', fontWeight: '600' },
+  rejectSection: { backgroundColor: '#ffffff', padding: 20, marginTop: 12 },
+  rejectSectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 12 },
+  actionsSection: { padding: 20, gap: 12 },
+  approveButton: {
+    backgroundColor: '#16a34a', borderRadius: 10, paddingVertical: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
-  submitButtonText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
-  resubmitButton: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#fffbeb', borderRadius: 8, paddingVertical: 14, marginTop: 20,
-    borderWidth: 1, borderColor: '#fde68a', gap: 8,
+  approveButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  secondaryRow: { flexDirection: 'row', gap: 12 },
+  editApproveButton: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 10, paddingVertical: 14, borderWidth: 2, borderColor: '#DC2626',
+    backgroundColor: '#fef2f2', gap: 6,
   },
-  resubmitButtonText: { fontSize: 15, fontWeight: '700', color: '#92400e' },
-  errorText: { fontSize: 18, color: '#6b7280', marginBottom: 20 },
-  button: { backgroundColor: '#DC2626', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
-  buttonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
+  editApproveText: { fontSize: 15, fontWeight: '700', color: '#DC2626' },
+  rejectButton: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 10, paddingVertical: 14, borderWidth: 1, borderColor: '#d1d5db',
+    backgroundColor: '#f9fafb', gap: 6,
+  },
+  rejectButtonText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
+  editActions: { flexDirection: 'row', gap: 12 },
+  cancelButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 10, paddingVertical: 14, paddingHorizontal: 20,
+    borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#f9fafb', gap: 6,
+  },
+  cancelButtonText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
+  confirmRejectButton: {
+    backgroundColor: '#DC2626', borderRadius: 10, paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+  },
+  disabledButton: { opacity: 0.5 },
 });

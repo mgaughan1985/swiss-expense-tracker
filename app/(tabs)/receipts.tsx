@@ -32,7 +32,14 @@ interface ReceiptItem {
   notes: string | null;
   image_path: string | null;
   created_at: string;
+  status: string;
 }
+
+const STATUS_BADGE: Record<string, { label: string; bg: string; text: string }> = {
+  submitted: { label: 'Submitted', bg: '#fffbeb', text: '#92400e' },
+  approved:  { label: 'Approved',  bg: '#f0fdf4', text: '#166534' },
+  rejected:  { label: 'Rejected',  bg: '#fef2f2', text: '#991b1b' },
+};
 
 interface MonthSection {
   title: string;       // e.g. "February 2026"
@@ -157,7 +164,16 @@ export default function ReceiptsScreen() {
             <Receipt size={18} color="#DC2626" strokeWidth={2.5} />
           </View>
           <View style={styles.receiptInfo}>
-            <Text style={styles.receiptSupplier}>{item.supplier}</Text>
+            <View style={styles.receiptTopRow}>
+              <Text style={styles.receiptSupplier}>{item.supplier}</Text>
+              {STATUS_BADGE[item.status] && (
+                <View style={[styles.statusPill, { backgroundColor: STATUS_BADGE[item.status].bg }]}>
+                  <Text style={[styles.statusPillText, { color: STATUS_BADGE[item.status].text }]}>
+                    {STATUS_BADGE[item.status].label}
+                  </Text>
+                </View>
+              )}
+            </View>
             <View style={styles.receiptMeta}>
               <Text style={styles.receiptDate}>{formattedDate}</Text>
               <View style={styles.dot} />
@@ -332,7 +348,10 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#fecaca',
   },
   receiptInfo: { flex: 1 },
-  receiptSupplier: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 3, letterSpacing: -0.2 },
+  receiptTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
+  receiptSupplier: { fontSize: 15, fontWeight: '700', color: '#111827', letterSpacing: -0.2, flex: 1 },
+  statusPill: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 },
+  statusPillText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
   receiptMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   receiptDate: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
   dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: '#d1d5db' },

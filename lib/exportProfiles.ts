@@ -10,6 +10,7 @@ export interface ReceiptRow {
   category: string;
   total_cost: number;
   notes: string | null;
+  project_notes: string | null;
   image_path: string | null;
   imageUrl: string;
 }
@@ -113,15 +114,16 @@ const bexioProfile: ExportProfile = {
   currency: 'CHF',
   filenameSuffix: 'bexio-ch',
   headers: [
-    'Date',               // Paid on — DD.MM.YYYY
-    'Supplier',           // Contact in Bexio
+    'Date',                 // Paid on — DD.MM.YYYY
+    'Supplier',             // Contact in Bexio
     'Title / Booking text', // Description
     'Currency',
-    'Gross',              // Total amount paid
-    'Net',                // Gross minus VAT
-    'Accounting Account', // Swiss chart of accounts code
+    'Gross',                // Total amount paid
+    'Net',                  // Gross minus VAT
+    'Accounting Account',   // Swiss chart of accounts code
+    'Client / Project',     // project_notes free text
     'Notes',
-    'Receipt URL',        // 1-year signed URL for bookkeeper reference
+    'Receipt URL',          // 1-year signed URL for bookkeeper reference
   ],
   mapRow: (r) => {
     const vatRate = BEXIO_VAT_RATE_MAP[r.category] ?? 0;
@@ -135,6 +137,7 @@ const bexioProfile: ExportProfile = {
       gross.toFixed(2),
       net.toFixed(2),
       BEXIO_ACCOUNT_MAP[r.category] ?? '6800',
+      r.project_notes ?? '',
       r.notes ?? '',
       r.imageUrl,
     ];
@@ -202,7 +205,7 @@ const sageIrelandProfile: ExportProfile = {
   software: 'Sage',
   currency: 'EUR',
   filenameSuffix: 'sage-ie',
-  headers: ['Type', 'Date', 'Business Name', 'Reference', 'Ledger Account', 'Details', 'Net', 'Tax Rate', 'Tax', 'Total', 'Receipt URL'],
+  headers: ['Type', 'Date', 'Business Name', 'Reference', 'Ledger Account', 'Client / Project', 'Details', 'Net', 'Tax Rate', 'Tax', 'Total', 'Receipt URL'],
   mapRow: (r) => {
     const taxRate = SAGE_IE_TAX_MAP[r.category] ?? 'T0';
     const taxPct = SAGE_IE_TAX_RATE_MAP[taxRate] ?? 0;
@@ -215,6 +218,7 @@ const sageIrelandProfile: ExportProfile = {
       r.supplier,
       r.id.slice(0, 8).toUpperCase(),
       SAGE_IE_LEDGER_MAP[r.category] ?? 'General Expenses',
+      r.project_notes ?? '',
       r.category + (r.notes ? ` — ${r.notes}` : ''),
       net.toFixed(2),
       taxRate,
@@ -285,7 +289,7 @@ const sageUKProfile: ExportProfile = {
   software: 'Sage',
   currency: 'GBP',
   filenameSuffix: 'sage-uk',
-  headers: ['Type', 'Date', 'Business Name', 'Reference', 'Ledger Account', 'Details', 'Net', 'Tax Rate', 'Tax', 'Total', 'Receipt URL'],
+  headers: ['Type', 'Date', 'Business Name', 'Reference', 'Ledger Account', 'Client / Project', 'Details', 'Net', 'Tax Rate', 'Tax', 'Total', 'Receipt URL'],
   mapRow: (r) => {
     const taxRate = SAGE_UK_TAX_MAP[r.category] ?? 'T0';
     const taxPct = SAGE_UK_TAX_RATE_MAP[taxRate] ?? 0;
@@ -298,6 +302,7 @@ const sageUKProfile: ExportProfile = {
       r.supplier,
       r.id.slice(0, 8).toUpperCase(),
       SAGE_UK_LEDGER_MAP[r.category] ?? 'General Expenses',
+      r.project_notes ?? '',
       r.category + (r.notes ? ` — ${r.notes}` : ''),
       net.toFixed(2),
       taxRate,

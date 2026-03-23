@@ -17,6 +17,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { withRetry, getErrorMessage } from '@/lib/withRetry';
 import { ErrorBanner } from '@/components/ErrorBanner';
+import { getActiveMembership } from '@/lib/organisation';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ArrowLeft, Calendar, Save } from 'lucide-react-native';
 import type { Category } from '@/types/database';
@@ -41,7 +42,9 @@ export default function ReceiptFormScreen() {
   const [category, setCategory] = useState('');
   const [totalCost, setTotalCost] = useState('');
   const [notes, setNotes] = useState('');
+  const [projectNotes, setProjectNotes] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -57,8 +60,14 @@ export default function ReceiptFormScreen() {
   useEffect(() => {
     loadCategories();
     loadSupplierHistory();
+    loadOrg();
     if (imagePath) loadImage();
   }, [imagePath]);
+
+  async function loadOrg() {
+    const membership = await getActiveMembership();
+    if (membership) setOrgId(membership.organisation_id);
+  }
 
   async function loadSupplierHistory() {
     try {
@@ -196,6 +205,8 @@ export default function ReceiptFormScreen() {
           total_cost: cost,
           image_path: imagePath || null,
           notes: notes.trim() || null,
+          project_notes: projectNotes.trim() || null,
+          organisation_id: orgId,
         });
         if (error) throw error;
       });
@@ -403,6 +414,19 @@ export default function ReceiptFormScreen() {
               multiline
               numberOfLines={4}
               textAlignVertical="top"
+            />
+          </View>
+
+          {/* Client / Project */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Client / Project (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={projectNotes}
+              onChangeText={setProjectNotes}
+              placeholder="e.g., Acme Corp Q1, Project Phoenix"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="sentences"
             />
           </View>
 
