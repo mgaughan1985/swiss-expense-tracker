@@ -78,15 +78,16 @@ create policy "org_members_can_read_org"
 
 -- ── 5. RLS policies — organisation_members ───────────────────────────────────
 
--- Users can read all memberships within their own organisation(s)
+-- Users can read their own membership rows.
+-- NOTE: A self-referential subquery here (querying organisation_members
+-- inside its own policy) causes infinite recursion in PostgreSQL and breaks
+-- any query that touches this table (including receipts_select's manager
+-- check). Direct user_id comparison avoids this entirely.
+-- This is sufficient for V1: getActiveMembership() filters by user_id,
+-- and the receipts_select manager EXISTS subquery also filters by user_id.
 create policy "org_members_can_read_memberships"
   on public.organisation_members for select
-  using (
-    organisation_id in (
-      select organisation_id from public.organisation_members
-      where user_id = auth.uid()
-    )
-  );
+  using (user_id = auth.uid());
 
 -- ── 6. RLS policies — receipts (updated) ─────────────────────────────────────
 --

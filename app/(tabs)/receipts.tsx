@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { getErrorMessage } from '@/lib/withRetry';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { Receipt, ChevronRight, ChevronDown } from 'lucide-react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
@@ -73,6 +75,7 @@ export default function ReceiptsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -81,6 +84,7 @@ export default function ReceiptsScreen() {
   );
 
   async function loadReceipts() {
+    setLoadError(null);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) return;
@@ -103,6 +107,7 @@ export default function ReceiptsScreen() {
       }
     } catch (error) {
       console.error('Error loading receipts:', error);
+      setLoadError(getErrorMessage(error));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -224,6 +229,14 @@ export default function ReceiptsScreen() {
           <Text style={styles.headerTitle}>My Receipts</Text>
         </View>
       </View>
+
+      {loadError && (
+        <ErrorBanner
+          type="error"
+          message={loadError}
+          onRetry={loadReceipts}
+        />
+      )}
 
       {/* Overall Summary */}
       {receipts.length > 0 && (
