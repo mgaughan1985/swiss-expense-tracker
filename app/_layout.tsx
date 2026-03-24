@@ -5,10 +5,12 @@ import { Session } from '@supabase/supabase-js';
 import { View, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initialiseSentry, setSentryUser, clearSentryUser } from '../lib/sentry';
+import { useFonts, DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 
 initialiseSentry();
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({ DMSans_400Regular, DMSans_500Medium, DMSans_700Bold });
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -67,10 +69,10 @@ export default function RootLayout() {
     }
   }, [session, loading, segments]);
 
-  if (loading) {
+  if (loading || !fontsLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#DC2626" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1E293B' }}>
+        <ActivityIndicator size="large" color="#F59E0B" />
       </View>
     );
   }

@@ -13,19 +13,10 @@ import { supabase } from '@/lib/supabase';
 import { getErrorMessage } from '@/lib/withRetry';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { Download, Calendar, ChevronDown, Globe } from 'lucide-react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { EXPORT_PROFILES, DEFAULT_PROFILE_ID, ExportProfile, PAID_PROFILE_IDS } from '@/lib/exportProfiles';
-
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill="#DC2626" />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
 interface ReceiptData {
   id: string;
@@ -213,11 +204,11 @@ export default function ExportScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <SwissFlag size={32} />
+          <BeaconFileLogo size={32} variant="light" />
           <Text style={styles.headerTitle}>Export Data</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#DC2626" />
+          <ActivityIndicator size="large" color="#F59E0B" />
           <Text style={styles.loadingText}>Loading data...</Text>
         </View>
       </View>
@@ -228,7 +219,7 @@ export default function ExportScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <SwissFlag size={32} />
+          <BeaconFileLogo size={32} variant="light" />
           <Text style={styles.headerTitle}>Export Data</Text>
         </View>
       </View>
@@ -255,7 +246,7 @@ export default function ExportScreen() {
               setShowProfilePicker(!showProfilePicker);
               setShowMonthPicker(false);
             }}>
-            <Globe size={18} color="#DC2626" strokeWidth={2.5} />
+            <Globe size={18} color="#F59E0B" strokeWidth={2.5} />
             <View style={styles.profileSelectorText}>
               <Text style={styles.monthSelectorText}>{selectedProfile.label}</Text>
               <Text style={styles.profileSubtext}>{selectedProfile.country} · {selectedProfile.currency}</Text>
@@ -320,7 +311,7 @@ export default function ExportScreen() {
               setShowMonthPicker(!showMonthPicker);
               setShowProfilePicker(false);
             }}>
-            <Calendar size={18} color="#DC2626" strokeWidth={2.5} />
+            <Calendar size={18} color="#F59E0B" strokeWidth={2.5} />
             <Text style={styles.monthSelectorText}>{selectedLabel}</Text>
             <ChevronDown size={18} color="#6b7280" strokeWidth={2.5} />
           </TouchableOpacity>
@@ -344,7 +335,7 @@ export default function ExportScreen() {
         {/* ── Summary Card ─────────────────────────────────────────── */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
-            <SwissFlag size={24} />
+            <BeaconFileLogo size={24} variant="light" />
             <Text style={styles.summaryTitle}>{selectedLabel}</Text>
           </View>
           <View style={styles.statsRow}>
@@ -410,7 +401,7 @@ export default function ExportScreen() {
 
         <View style={styles.swissDecoration}>
           <View style={styles.swissLine} />
-          <SwissFlag size={16} />
+          <BeaconFileLogo size={16} variant="light" />
           <View style={styles.swissLine} />
         </View>
       </ScrollView>
@@ -483,14 +474,14 @@ function getProfileInfo(profile: ExportProfile): string[] {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: '#FEF9EE' },
   header: {
-    backgroundColor: '#ffffff', paddingTop: 60, paddingBottom: 16,
-    paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+    backgroundColor: '#1E293B', paddingTop: 60, paddingBottom: 16,
+    paddingHorizontal: 20, borderBottomWidth: 0,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#111827', letterSpacing: -0.5 },
+  headerTitle: { fontSize: 22, fontWeight: '500', color: '#FEF9EE', letterSpacing: -0.5, fontFamily: 'DMSans_500Medium' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280', fontWeight: '500' },
   content: { flex: 1 },
@@ -512,10 +503,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08, shadowRadius: 8, elevation: 4,
   },
   monthOption: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  monthOptionActive: { backgroundColor: '#fef2f2' },
+  monthOptionActive: { backgroundColor: '#FFFBEB' },
   monthOptionLocked: { opacity: 0.6 },
   monthOptionText: { fontSize: 15, color: '#374151', fontWeight: '500' },
-  monthOptionTextActive: { color: '#DC2626', fontWeight: '700' },
+  monthOptionTextActive: { color: '#D97706', fontWeight: '700' },
   monthOptionTextLocked: { color: '#9ca3af' },
   profileOptionSubtext: { fontSize: 12, color: '#9ca3af', fontWeight: '400', marginTop: 2 },
   profileOptionRow: { flexDirection: 'row', alignItems: 'center' },
@@ -537,20 +528,20 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 15, fontWeight: '700', color: '#111827', letterSpacing: -0.3, marginBottom: 2 },
   statLabel: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.3 },
   exportButton: {
-    backgroundColor: '#DC2626', borderRadius: 12, padding: 20,
+    backgroundColor: '#F59E0B', borderRadius: 12, padding: 20,
     flexDirection: 'row', alignItems: 'center', gap: 16,
   },
   exportButtonDisabled: { opacity: 0.5 },
   exportButtonContent: { flex: 1 },
-  exportButtonText: { color: '#ffffff', fontSize: 17, fontWeight: '700', marginBottom: 2, letterSpacing: -0.3 },
-  exportButtonSubtext: { color: '#fecaca', fontSize: 13, fontWeight: '500' },
+  exportButtonText: { color: '#1E293B', fontSize: 17, fontWeight: '500', marginBottom: 2, letterSpacing: -0.3, fontFamily: 'DMSans_500Medium' },
+  exportButtonSubtext: { color: 'rgba(30,41,59,0.6)', fontSize: 13, fontWeight: '400' },
   infoCard: {
     backgroundColor: '#f9fafb', borderRadius: 12, padding: 20, borderWidth: 1, borderColor: '#e5e7eb',
   },
   infoTitle: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 12, letterSpacing: -0.2 },
   infoList: { gap: 10 },
   infoItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  infoBullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#DC2626', marginTop: 7 },
+  infoBullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#F59E0B', marginTop: 7 },
   infoText: { flex: 1, fontSize: 14, color: '#374151', lineHeight: 20 },
   swissDecoration: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 32, gap: 12,

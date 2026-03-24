@@ -23,8 +23,16 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#DC2626',
-        tabBarInactiveTintColor: '#6b7280',
+        tabBarActiveTintColor: '#F59E0B',
+        tabBarInactiveTintColor: 'rgba(254,249,238,0.5)',
+        tabBarStyle: {
+          backgroundColor: '#1E293B',
+          borderTopColor: 'rgba(254,249,238,0.1)',
+        },
+        tabBarLabelStyle: {
+          fontFamily: 'DMSans_500Medium',
+          fontSize: 11,
+        },
       }}>
       <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: ({ size, color }) => <Home size={size} color={color} /> }} />
       <Tabs.Screen name="camera" options={{ title: 'Camera', tabBarIcon: ({ size, color }) => <Camera size={size} color={color} /> }} />

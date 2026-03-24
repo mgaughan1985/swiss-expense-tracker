@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+  <!-- Light background -->
+  <rect width="500" height="500" rx="80" fill="#FEF9EE"/>
+
+  <!-- Base platform -->
+  <rect x="148" y="368" width="204" height="28" rx="6" fill="#1E293B"/>
+
+  <!-- Tower body — tapered trapezoid (wider at bottom) -->
+  <polygon points="183,238 317,238 304,368 196,368" fill="#1E293B"/>
+
+  <!-- Lantern room — slightly wider than tower top -->
+  <rect x="168" y="208" width="164" height="34" rx="6" fill="#F59E0B"/>
+
+  <!-- Roof triangle — slate dark, clear on light background -->
+  <polygon points="250,140 158,212 342,212" fill="#1E293B"/>
+
+  <!-- Window on tower body -->
+  <rect x="213" y="270" width="74" height="52" rx="8" fill="#FBBF24"/>
+
+  <!-- Light rays from tip of roof -->
+  <line x1="250" y1="162" x2="98" y2="82" stroke="#F59E0B" stroke-width="9" stroke-linecap="round" opacity="0.95"/>
+  <line x1="250" y1="162" x2="76" y2="148" stroke="#F59E0B" stroke-width="6" stroke-linecap="round" opacity="0.65"/>
+  <line x1="250" y1="162" x2="88" y2="210" stroke="#F59E0B" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+</svg>

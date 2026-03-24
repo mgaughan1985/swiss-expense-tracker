@@ -14,17 +14,8 @@ import { Camera, Receipt, Download, UserCircle, TrendingUp } from 'lucide-react-
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase';
-import Svg, { Path, Rect } from 'react-native-svg';
 import CropTool, { CropRegion } from '@/components/CropTool';
-
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill="#DC2626" />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
 interface MonthStats {
   total: number;
@@ -33,14 +24,14 @@ interface MonthStats {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Meals: '#DC2626',
+  Meals: '#F59E0B',
   Transport: '#2563EB',
   Accommodation: '#059669',
   'Office Supplies': '#D97706',
   Communication: '#7C3AED',
   Parking: '#0891B2',
   Fuel: '#374151',
-  food: '#DC2626',
+  food: '#F59E0B',
   Other: '#9CA3AF',
 };
 
@@ -207,16 +198,19 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <SwissFlag size={44} />
+          <BeaconFileLogo size={40} variant="light" />
           <View style={styles.headerText}>
-            <Text style={styles.title}>Expense Tracker</Text>
-            <Text style={styles.subtitle}>Out-of-canton work expenses</Text>
+            <Text style={styles.headerWordmark}>
+              <Text style={styles.headerWordmarkBeacon}>Beacon</Text>
+              <Text style={styles.headerWordmarkFile}>File</Text>
+            </Text>
+            <Text style={styles.subtitle}>Work expense tracker</Text>
           </View>
         </View>
         <TouchableOpacity
           style={styles.profileButton}
           onPress={() => router.push('/(tabs)/profile')}>
-          <UserCircle size={28} color="#DC2626" strokeWidth={2} />
+          <UserCircle size={28} color="#F59E0B" strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
@@ -233,8 +227,8 @@ export default function HomeScreen() {
             disabled={isUploading}>
             <View style={styles.cardIcon}>
               {isUploading
-                ? <ActivityIndicator size="large" color="#DC2626" />
-                : <Camera size={32} color="#DC2626" strokeWidth={2} />}
+                ? <ActivityIndicator size="large" color="#F59E0B" />
+                : <Camera size={32} color="#F59E0B" strokeWidth={2} />}
             </View>
             <Text style={styles.cardTitle}>{isUploading ? 'Uploading...' : 'Scan Receipt'}</Text>
             <Text style={styles.cardDescription}>
@@ -266,12 +260,12 @@ export default function HomeScreen() {
         {/* Monthly Dashboard */}
         <View style={styles.dashboardContainer}>
           <View style={styles.dashboardHeader}>
-            <TrendingUp size={18} color="#DC2626" strokeWidth={2.5} />
+            <TrendingUp size={18} color="#F59E0B" strokeWidth={2.5} />
             <Text style={styles.dashboardTitle}>{monthLabel}</Text>
           </View>
 
           {loadingStats ? (
-            <ActivityIndicator size="small" color="#DC2626" style={{ marginVertical: 20 }} />
+            <ActivityIndicator size="small" color="#F59E0B" style={{ marginVertical: 20 }} />
           ) : (
             <>
               <View style={styles.statsRow}>
@@ -318,7 +312,7 @@ export default function HomeScreen() {
 
         <View style={styles.swissDecoration}>
           <View style={styles.swissLine} />
-          <SwissFlag size={16} />
+          <BeaconFileLogo size={20} variant="light" />
           <View style={styles.swissLine} />
         </View>
       </ScrollView>
@@ -327,35 +321,36 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: '#FEF9EE' },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1E293B',
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomWidth: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerText: { gap: 2 },
+  headerWordmark: { fontSize: 20, letterSpacing: -0.3 },
+  headerWordmarkBeacon: { color: '#FEF9EE', fontWeight: '500', fontFamily: 'DMSans_500Medium' },
+  headerWordmarkFile:   { color: '#F59E0B', fontWeight: '400', fontFamily: 'DMSans_400Regular' },
   profileButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: '700', color: '#111827', letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  subtitle: { fontSize: 13, color: 'rgba(254,249,238,0.55)', fontFamily: 'DMSans_400Regular' },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
   grid: { paddingHorizontal: 20, paddingTop: 20, gap: 12 },
   cardRow: { flexDirection: 'row', gap: 12 },
   card: { backgroundColor: '#ffffff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#e5e7eb' },
-  cardPrimary: { backgroundColor: '#fef2f2', borderColor: '#DC2626', borderWidth: 2 },
+  cardPrimary: { backgroundColor: '#FFFBEB', borderColor: '#F59E0B', borderWidth: 2 },
   cardSmall: { flex: 1, padding: 16 },
   cardDisabled: { opacity: 0.6 },
   cardIcon: {
     width: 64, height: 64, borderRadius: 32,
     backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center',
-    marginBottom: 16, borderWidth: 2, borderColor: '#DC2626',
+    marginBottom: 16, borderWidth: 2, borderColor: '#F59E0B',
   },
   cardIconSmall: {
     width: 48, height: 48, borderRadius: 24,
@@ -373,7 +368,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', marginBottom: 20 },
   statBox: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, backgroundColor: '#e5e7eb', marginVertical: 4 },
-  statValue: { fontSize: 24, fontWeight: '700', color: '#DC2626', letterSpacing: -0.5 },
+  statValue: { fontSize: 24, fontWeight: '700', color: '#1E293B', letterSpacing: -0.5 },
   statLabel: { fontSize: 12, color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 },
   categoryBreakdown: { gap: 12 },
   breakdownTitle: { fontSize: 13, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },

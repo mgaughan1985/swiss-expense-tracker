@@ -14,16 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { getErrorMessage } from '@/lib/withRetry';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { Receipt, ChevronRight, ChevronDown } from 'lucide-react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
-
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill="#DC2626" />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
 interface ReceiptItem {
   id: string;
@@ -38,7 +29,7 @@ interface ReceiptItem {
 }
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; text: string }> = {
-  submitted: { label: 'Submitted', bg: '#fffbeb', text: '#92400e' },
+  submitted: { label: 'Submitted', bg: '#F59E0B', text: '#1E293B' },
   approved:  { label: 'Approved',  bg: '#f0fdf4', text: '#166534' },
   rejected:  { label: 'Rejected',  bg: '#fef2f2', text: '#991b1b' },
 };
@@ -142,8 +133,8 @@ export default function ReceiptsScreen() {
         activeOpacity={0.7}>
         <View style={styles.monthHeaderLeft}>
           {isCollapsed
-            ? <ChevronRight size={18} color="#DC2626" strokeWidth={2.5} />
-            : <ChevronDown size={18} color="#DC2626" strokeWidth={2.5} />}
+            ? <ChevronRight size={18} color="#F59E0B" strokeWidth={2.5} />
+            : <ChevronDown size={18} color="#F59E0B" strokeWidth={2.5} />}
           <Text style={styles.monthTitle}>{section.title}</Text>
           <Text style={styles.monthCount}>{section.data.length || sections.find(s => s.monthKey === section.monthKey)?.data.length || 0} receipts</Text>
         </View>
@@ -166,7 +157,7 @@ export default function ReceiptsScreen() {
         onPress={() => router.push({ pathname: '/receipt-detail', params: { id: item.id } })}>
         <View style={styles.receiptLeft}>
           <View style={styles.receiptIcon}>
-            <Receipt size={18} color="#DC2626" strokeWidth={2.5} />
+            <Receipt size={18} color="#F59E0B" strokeWidth={2.5} />
           </View>
           <View style={styles.receiptInfo}>
             <View style={styles.receiptTopRow}>
@@ -198,7 +189,7 @@ export default function ReceiptsScreen() {
     return (
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIconContainer}>
-          <Receipt size={64} color="#DC2626" strokeWidth={2} />
+          <Receipt size={64} color="#F59E0B" strokeWidth={2} />
         </View>
         <Text style={styles.emptyTitle}>No Receipts Yet</Text>
         <Text style={styles.emptyText}>Start by scanning your first receipt using the camera tab.</Text>
@@ -210,7 +201,7 @@ export default function ReceiptsScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <SwissFlag size={32} />
+          <BeaconFileLogo size={32} variant="light" />
           <Text style={styles.headerTitle}>My Receipts</Text>
         </View>
         <View style={styles.loadingContainer}>
@@ -225,7 +216,7 @@ export default function ReceiptsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <SwissFlag size={32} />
+          <BeaconFileLogo size={32} variant="light" />
           <Text style={styles.headerTitle}>My Receipts</Text>
         </View>
       </View>
@@ -286,18 +277,17 @@ export default function ReceiptsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1E293B',
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#111827', letterSpacing: -0.5 },
+  headerTitle: { fontSize: 22, fontWeight: '500', color: '#FEF9EE', letterSpacing: -0.5, fontFamily: 'DMSans_500Medium' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280', fontWeight: '500' },
 
@@ -315,14 +305,14 @@ const styles = StyleSheet.create({
     padding: 14, borderWidth: 1, borderColor: '#e5e7eb',
   },
   summaryCardHighlight: {
-    backgroundColor: '#fef2f2', borderColor: '#DC2626', borderWidth: 2,
+    backgroundColor: '#FFFBEB', borderColor: '#F59E0B', borderWidth: 2,
   },
   summaryLabel: { fontSize: 11, color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  summaryLabelHighlight: { fontSize: 11, color: '#DC2626', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  summaryLabelHighlight: { fontSize: 11, color: '#D97706', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   summaryAmount: { fontSize: 18, fontWeight: '700', color: '#111827', letterSpacing: -0.5 },
-  summaryAmountHighlight: { fontSize: 18, fontWeight: '700', color: '#DC2626', letterSpacing: -0.5 },
+  summaryAmountHighlight: { fontSize: 18, fontWeight: '700', color: '#1E293B', letterSpacing: -0.5 },
   summaryCount: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-  summaryCountHighlight: { fontSize: 12, color: '#DC2626', marginTop: 2, opacity: 0.7 },
+  summaryCountHighlight: { fontSize: 12, color: '#D97706', marginTop: 2, opacity: 0.8 },
 
   listContent: { paddingBottom: 40 },
   listContentEmpty: { flex: 1 },
@@ -331,16 +321,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#1E293B',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomWidth: 0,
   },
   monthHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  monthTitle: { fontSize: 15, fontWeight: '700', color: '#111827', letterSpacing: -0.3 },
-  monthCount: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
-  monthTotal: { fontSize: 15, fontWeight: '700', color: '#DC2626', letterSpacing: -0.3 },
+  monthTitle: { fontSize: 15, fontWeight: '500', color: '#FEF9EE', letterSpacing: -0.3, fontFamily: 'DMSans_500Medium' },
+  monthCount: { fontSize: 12, color: 'rgba(254,249,238,0.5)', fontWeight: '400' },
+  monthTotal: { fontSize: 15, fontWeight: '500', color: '#F59E0B', letterSpacing: -0.3, fontFamily: 'DMSans_500Medium' },
 
   receiptCard: {
     backgroundColor: '#ffffff',
@@ -357,8 +346,8 @@ const styles = StyleSheet.create({
   receiptLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
   receiptIcon: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#fef2f2', justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: '#fecaca',
+    backgroundColor: '#FFFBEB', justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: '#FCD34D',
   },
   receiptInfo: { flex: 1 },
   receiptTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
@@ -370,13 +359,13 @@ const styles = StyleSheet.create({
   dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: '#d1d5db' },
   receiptCategory: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
   receiptRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  receiptAmount: { fontSize: 15, fontWeight: '700', color: '#DC2626', letterSpacing: -0.3 },
+  receiptAmount: { fontSize: 15, fontWeight: '700', color: '#1E293B', letterSpacing: -0.3 },
 
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, paddingTop: 80 },
   emptyIconContainer: {
     width: 96, height: 96, borderRadius: 48,
-    backgroundColor: '#fef2f2', justifyContent: 'center', alignItems: 'center',
-    marginBottom: 16, borderWidth: 2, borderColor: '#DC2626',
+    backgroundColor: '#FFFBEB', justifyContent: 'center', alignItems: 'center',
+    marginBottom: 16, borderWidth: 2, borderColor: '#F59E0B',
   },
   emptyTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginTop: 16, marginBottom: 8, letterSpacing: -0.5 },
   emptyText: { fontSize: 15, color: '#6b7280', textAlign: 'center', lineHeight: 22 },

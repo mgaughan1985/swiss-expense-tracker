@@ -15,19 +15,9 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Eye, EyeOff, ArrowLeft, ChevronDown } from 'lucide-react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
-import { colors, spacing, borderRadius, typography } from '@/theme';
+import { colors, spacing, borderRadius } from '@/theme';
 import { CANADIAN_PROVINCES } from '@/lib/canada';
-
-// Swiss Flag Component
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill={colors.primary} />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -154,14 +144,17 @@ export default function SignupScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
           disabled={loading}>
-          <ArrowLeft size={24} color={colors.gray900} />
+          <ArrowLeft size={24} color="#FEF9EE" />
         </TouchableOpacity>
 
         {/* Header */}
         <View style={styles.header}>
-          <SwissFlag size={56} />
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Start tracking your work expenses today</Text>
+          <BeaconFileLogo size={72} variant="dark" />
+          <Text style={styles.wordmark}>
+            <Text style={styles.wordmarkBeacon}>Beacon</Text>
+            <Text style={styles.wordmarkFile}>File</Text>
+          </Text>
+          <Text style={styles.tagline}>Expenses made clear.</Text>
         </View>
 
         {/* Signup Form */}
@@ -367,7 +360,7 @@ export default function SignupScreen() {
         {/* Footer Decoration */}
         <View style={styles.footer}>
           <View style={styles.footerLine} />
-          <SwissFlag size={16} />
+          <BeaconFileLogo size={20} variant="dark" />
           <View style={styles.footerLine} />
         </View>
       </ScrollView>
@@ -378,7 +371,7 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: '#1E293B',
   },
   scrollContent: {
     flexGrow: 1,
@@ -413,24 +406,24 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   label: {
-    ...typography.label,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FEF9EE',
+    fontFamily: 'DMSans_500Medium',
   },
   input: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.gray200,
+    backgroundColor: '#FEF9EE',
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: 14,
     fontSize: 16,
-    color: colors.gray900,
+    color: '#1E293B',
+    fontFamily: 'DMSans_400Regular',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.gray200,
+    backgroundColor: '#FEF9EE',
     borderRadius: borderRadius.md,
   },
   passwordInput: {
@@ -438,7 +431,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: 14,
     fontSize: 16,
-    color: colors.gray900,
+    color: '#1E293B',
+    fontFamily: 'DMSans_400Regular',
   },
   eyeButton: {
     padding: spacing.md,
@@ -455,9 +449,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   signupButtonText: {
-    color: colors.white,
+    color: '#1E293B',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
+    fontFamily: 'DMSans_500Medium',
   },
   loginButton: {
     paddingVertical: spacing.md,
@@ -465,60 +460,60 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     fontSize: 14,
-    color: colors.gray500,
+    color: 'rgba(254,249,238,0.6)',
+    fontFamily: 'DMSans_400Regular',
   },
   loginButtonTextBold: {
-    fontWeight: '600',
-    color: colors.primary,
+    fontWeight: '500',
+    color: '#F59E0B',
+    fontFamily: 'DMSans_500Medium',
   },
 
   countryToggle: {
     flexDirection: 'row',
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.gray200,
+    borderColor: 'rgba(254,249,238,0.2)',
     overflow: 'hidden',
   },
   countryOption: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   countryOptionActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#F59E0B',
   },
   countryOptionText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: colors.gray500,
+    fontWeight: '500',
+    color: 'rgba(254,249,238,0.6)',
+    fontFamily: 'DMSans_500Medium',
   },
   countryOptionTextActive: {
-    color: colors.white,
+    color: '#1E293B',
   },
 
   pickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.gray200,
+    backgroundColor: '#FEF9EE',
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: 14,
   },
   pickerButtonText: {
     fontSize: 16,
-    color: colors.gray900,
+    color: '#1E293B',
+    fontFamily: 'DMSans_400Regular',
   },
   pickerPlaceholder: {
-    color: colors.gray400,
+    color: '#9CA3AF',
   },
   pickerDropdown: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.gray200,
+    backgroundColor: '#FEF9EE',
     borderRadius: borderRadius.md,
     marginTop: 4,
     maxHeight: 240,
@@ -528,26 +523,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: 'rgba(30,41,59,0.08)',
   },
   pickerOptionActive: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#FFFBEB',
   },
   pickerOptionText: {
     fontSize: 15,
-    color: '#374151',
-    fontWeight: '500',
+    color: '#1E293B',
+    fontWeight: '400',
+    fontFamily: 'DMSans_400Regular',
   },
   pickerOptionTextActive: {
-    color: colors.primary,
-    fontWeight: '700',
+    color: '#D97706',
+    fontWeight: '500',
+    fontFamily: 'DMSans_500Medium',
   },
   terms: {
     fontSize: 12,
-    color: colors.gray400,
+    color: 'rgba(254,249,238,0.4)',
     textAlign: 'center',
     marginTop: spacing.xxl,
     lineHeight: 18,
+    fontFamily: 'DMSans_400Regular',
   },
   footer: {
     flexDirection: 'row',
@@ -559,6 +557,6 @@ const styles = StyleSheet.create({
   footerLine: {
     width: 60,
     height: 1,
-    backgroundColor: colors.gray200,
+    backgroundColor: 'rgba(254,249,238,0.15)',
   },
 });

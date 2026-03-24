@@ -15,17 +15,8 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Eye, EyeOff } from 'lucide-react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill="#DC2626" />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -88,10 +79,7 @@ export default function LoginScreen() {
         return;
       }
 
-      // Store the keep signed in preference
       await AsyncStorage.setItem('keepSignedIn', keepSignedIn ? 'true' : 'false');
-
-      // If not keeping signed in, register a listener to sign out when app closes
       if (!keepSignedIn) {
         await AsyncStorage.setItem('sessionExpiry', 'session_only');
       } else {
@@ -114,10 +102,14 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
 
+        {/* Wordmark */}
         <View style={styles.header}>
-          <SwissFlag size={56} />
-          <Text style={styles.title}>Expense Tracker</Text>
-          <Text style={styles.subtitle}>Out-of-canton work expenses</Text>
+          <BeaconFileLogo size={72} variant="dark" />
+          <Text style={styles.wordmark}>
+            <Text style={styles.wordmarkBeacon}>Beacon</Text>
+            <Text style={styles.wordmarkFile}>File</Text>
+          </Text>
+          <Text style={styles.tagline}>Expenses made clear.</Text>
         </View>
 
         <View style={styles.formContainer}>
@@ -157,13 +149,13 @@ export default function LoginScreen() {
                 onPress={() => setShowPassword(!showPassword)}
                 disabled={loading}>
                 {showPassword
-                  ? <EyeOff size={20} color="#6B7280" />
-                  : <Eye size={20} color="#6B7280" />}
+                  ? <EyeOff size={20} color="#9CA3AF" />
+                  : <Eye size={20} color="#9CA3AF" />}
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Keep Me Signed In Toggle */}
+          {/* Keep Me Signed In */}
           <View style={styles.keepSignedInRow}>
             <View style={styles.keepSignedInText}>
               <Text style={styles.keepSignedInLabel}>Keep me signed in</Text>
@@ -172,8 +164,8 @@ export default function LoginScreen() {
             <Switch
               value={keepSignedIn}
               onValueChange={setKeepSignedIn}
-              trackColor={{ false: '#E5E7EB', true: '#fecaca' }}
-              thumbColor={keepSignedIn ? '#DC2626' : '#9CA3AF'}
+              trackColor={{ false: '#334155', true: '#D97706' }}
+              thumbColor={keepSignedIn ? '#F59E0B' : '#6B7280'}
               disabled={loading}
             />
           </View>
@@ -190,7 +182,7 @@ export default function LoginScreen() {
             onPress={handleLogin}
             disabled={loading}>
             {loading
-              ? <ActivityIndicator size="small" color="#FFFFFF" />
+              ? <ActivityIndicator size="small" color="#1E293B" />
               : <Text style={styles.loginButtonText}>Sign In</Text>}
           </TouchableOpacity>
 
@@ -206,7 +198,7 @@ export default function LoginScreen() {
 
         <View style={styles.footer}>
           <View style={styles.footerLine} />
-          <SwissFlag size={16} />
+          <BeaconFileLogo size={20} variant="dark" />
           <View style={styles.footerLine} />
         </View>
       </ScrollView>
@@ -215,45 +207,75 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 80, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: '#1E293B' },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 80, paddingBottom: 40 },
+
   header: { alignItems: 'center', marginBottom: 40 },
-  title: { fontSize: 22, fontWeight: '700', color: '#111827', letterSpacing: -0.5, marginTop: 16, marginBottom: 4 },
-  subtitle: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
+  wordmark: { fontSize: 32, marginTop: 16, marginBottom: 6, letterSpacing: -0.5 },
+  wordmarkBeacon: { color: '#FEF9EE', fontWeight: '500', fontFamily: 'DMSans_500Medium' },
+  wordmarkFile:   { color: '#F59E0B', fontWeight: '400', fontFamily: 'DMSans_400Regular' },
+  tagline: { fontSize: 14, color: 'rgba(254,249,238,0.6)', fontWeight: '400', fontFamily: 'DMSans_400Regular' },
+
   formContainer: { gap: 16 },
   inputGroup: { gap: 8 },
-  label: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  label: { fontSize: 14, fontWeight: '500', color: '#FEF9EE', fontFamily: 'DMSans_500Medium' },
   input: {
-    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB',
-    borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: '#111827',
+    backgroundColor: '#FEF9EE',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#1E293B',
+    fontFamily: 'DMSans_400Regular',
   },
   passwordContainer: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF9EE',
+    borderRadius: 8,
   },
-  passwordInput: { flex: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: '#111827' },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#1E293B',
+    fontFamily: 'DMSans_400Regular',
+  },
   eyeButton: { padding: 12, paddingRight: 16 },
 
   keepSignedInRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#F9FAFB', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12,
-    borderWidth: 1, borderColor: '#E5E7EB',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(254,249,238,0.12)',
   },
   keepSignedInText: { gap: 2 },
-  keepSignedInLabel: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  keepSignedInSub: { fontSize: 12, color: '#9CA3AF' },
+  keepSignedInLabel: { fontSize: 14, fontWeight: '500', color: '#FEF9EE', fontFamily: 'DMSans_500Medium' },
+  keepSignedInSub: { fontSize: 12, color: 'rgba(254,249,238,0.5)', fontFamily: 'DMSans_400Regular' },
 
   forgotPasswordContainer: { alignItems: 'flex-end', marginTop: -4 },
-  forgotPasswordText: { fontSize: 14, color: '#DC2626', fontWeight: '500' },
+  forgotPasswordText: { fontSize: 14, color: '#F59E0B', fontWeight: '500', fontFamily: 'DMSans_500Medium' },
+
   loginButton: {
-    backgroundColor: '#DC2626', borderRadius: 8,
-    paddingVertical: 16, alignItems: 'center', marginTop: 8,
+    backgroundColor: '#F59E0B',
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 8,
   },
   loginButtonDisabled: { opacity: 0.6 },
-  loginButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  loginButtonText: { color: '#1E293B', fontSize: 16, fontWeight: '500', fontFamily: 'DMSans_500Medium' },
+
   signupButton: { paddingVertical: 12, alignItems: 'center' },
-  signupButtonText: { fontSize: 14, color: '#6B7280' },
-  signupButtonTextBold: { fontWeight: '600', color: '#DC2626' },
+  signupButtonText: { fontSize: 14, color: 'rgba(254,249,238,0.6)', fontFamily: 'DMSans_400Regular' },
+  signupButtonTextBold: { fontWeight: '500', color: '#F59E0B', fontFamily: 'DMSans_500Medium' },
+
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 40, gap: 12 },
-  footerLine: { width: 60, height: 1, backgroundColor: '#E5E7EB' },
+  footerLine: { width: 60, height: 1, backgroundColor: 'rgba(254,249,238,0.15)' },
 });

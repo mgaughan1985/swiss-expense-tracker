@@ -1,13 +1,18 @@
 {
   "expo": {
-    "name": "Swiss Tax Tracker",
+    "name": "BeaconFile",
     "slug": "swiss-tax-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
-   "scheme": "swiss-tax-tracker",
-"icon": "./assets/images/icon.png",
-    "userInterfaceStyle": "automatic",
+    "scheme": "swiss-tax-tracker",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1E293B"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mgaughan.swisstaxtracker"
@@ -15,6 +20,10 @@
     "android": {
       "package": "com.mgaughan.swisstaxtracker",
       "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#1E293B"
+      },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -24,7 +33,8 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -33,7 +43,7 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Allow Swiss Tax Tracker to access your camera to capture receipts."
+          "cameraPermission": "Allow BeaconFile to access your camera to capture receipts."
         }
       ]
     ],
