@@ -14,9 +14,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
+import { Eye, EyeOff, ArrowLeft, ChevronDown } from 'lucide-react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { colors, spacing, borderRadius, typography } from '@/theme';
+import { CANADIAN_PROVINCES } from '@/lib/canada';
 
 // Swiss Flag Component
 function SwissFlag({ size = 40 }: { size?: number }) {
@@ -42,6 +43,13 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Location fields
+  const [country, setCountry] = useState<'Switzerland' | 'Canada'>('Switzerland');
+  const [province, setProvince] = useState('');
+  const [showProvincePicker, setShowProvincePicker] = useState(false);
+  const [canton, setCanton] = useState('');
+  const [municipality, setMunicipality] = useState('');
 
   async function handleSignup() {
     // Validation
@@ -75,14 +83,24 @@ export default function SignupScreen() {
       return;
     }
 
+    if (country === 'Canada' && !province) {
+      Alert.alert('Missing Information', 'Please select your province');
+      return;
+    }
+
     setLoading(true);
     try {
+      const locationData = country === 'Canada'
+        ? { country, province }
+        : { country, canton: canton.trim() || undefined, municipality: municipality.trim() || undefined };
+
       const { error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: password,
         options: {
           data: {
             full_name: name.trim(),
+            ...locationData,
           },
         },
       });
@@ -162,6 +180,91 @@ export default function SignupScreen() {
               editable={!loading}
             />
           </View>
+
+          {/* Country */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Country</Text>
+            <View style={styles.countryToggle}>
+              <TouchableOpacity
+                style={[styles.countryOption, country === 'Switzerland' && styles.countryOptionActive]}
+                onPress={() => { setCountry('Switzerland'); setProvince(''); }}
+                disabled={loading}>
+                <Text style={[styles.countryOptionText, country === 'Switzerland' && styles.countryOptionTextActive]}>
+                  Switzerland
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.countryOption, country === 'Canada' && styles.countryOptionActive]}
+                onPress={() => { setCountry('Canada'); setCanton(''); setMunicipality(''); }}
+                disabled={loading}>
+                <Text style={[styles.countryOptionText, country === 'Canada' && styles.countryOptionTextActive]}>
+                  Canada
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Canada: Province */}
+          {country === 'Canada' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Province</Text>
+              <TouchableOpacity
+                style={styles.pickerButton}
+                onPress={() => setShowProvincePicker(!showProvincePicker)}
+                disabled={loading}>
+                <Text style={[styles.pickerButtonText, !province && styles.pickerPlaceholder]}>
+                  {province
+                    ? CANADIAN_PROVINCES.find(p => p.code === province)?.name ?? province
+                    : 'Select province'}
+                </Text>
+                <ChevronDown size={18} color={colors.gray500} />
+              </TouchableOpacity>
+              {showProvincePicker && (
+                <View style={styles.pickerDropdown}>
+                  {CANADIAN_PROVINCES.map(p => (
+                    <TouchableOpacity
+                      key={p.code}
+                      style={[styles.pickerOption, province === p.code && styles.pickerOptionActive]}
+                      onPress={() => { setProvince(p.code); setShowProvincePicker(false); }}>
+                      <Text style={[styles.pickerOptionText, province === p.code && styles.pickerOptionTextActive]}>
+                        {p.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Switzerland: Canton + Municipality (optional) */}
+          {country === 'Switzerland' && (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Canton (Optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Vaud"
+                  placeholderTextColor={colors.gray400}
+                  value={canton}
+                  onChangeText={setCanton}
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Municipality (Optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Grandvaux"
+                  placeholderTextColor={colors.gray400}
+                  value={municipality}
+                  onChangeText={setMunicipality}
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+              </View>
+            </>
+          )}
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
@@ -367,6 +470,77 @@ const styles = StyleSheet.create({
   loginButtonTextBold: {
     fontWeight: '600',
     color: colors.primary,
+  },
+
+  countryToggle: {
+    flexDirection: 'row',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    overflow: 'hidden',
+  },
+  countryOption: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
+  countryOptionActive: {
+    backgroundColor: colors.primary,
+  },
+  countryOptionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.gray500,
+  },
+  countryOptionTextActive: {
+    color: colors.white,
+  },
+
+  pickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    color: colors.gray900,
+  },
+  pickerPlaceholder: {
+    color: colors.gray400,
+  },
+  pickerDropdown: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    borderRadius: borderRadius.md,
+    marginTop: 4,
+    maxHeight: 240,
+    overflow: 'hidden',
+  },
+  pickerOption: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  pickerOptionActive: {
+    backgroundColor: '#fef2f2',
+  },
+  pickerOptionText: {
+    fontSize: 15,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  pickerOptionTextActive: {
+    color: colors.primary,
+    fontWeight: '700',
   },
   terms: {
     fontSize: 12,

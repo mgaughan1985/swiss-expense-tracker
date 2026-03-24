@@ -16,7 +16,7 @@ import { Download, Calendar, ChevronDown, Globe } from 'lucide-react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { EXPORT_PROFILES, DEFAULT_PROFILE_ID, ExportProfile } from '@/lib/exportProfiles';
+import { EXPORT_PROFILES, DEFAULT_PROFILE_ID, ExportProfile, PAID_PROFILE_IDS } from '@/lib/exportProfiles';
 
 function SwissFlag({ size = 40 }: { size?: number }) {
   return (
@@ -55,6 +55,8 @@ export default function ExportScreen() {
   const [showProfilePicker, setShowProfilePicker] = useState(false);
   const [taxDeductibleCats, setTaxDeductibleCats] = useState<Set<string>>(new Set());
   const [banner, setBanner] = useState<{ type: 'error' | 'warning'; message: string } | null>(null);
+  const [userTier, setUserTier] = useState<string>('free');
+  const [userProvince, setUserProvince] = useState<string>('');
 
   const selectedProfile: ExportProfile =
     EXPORT_PROFILES.find(p => p.id === selectedProfileId) ?? EXPORT_PROFILES[0];
@@ -68,13 +70,14 @@ export default function ExportScreen() {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) return;
 
-      const [receiptsRes, catsRes] = await Promise.all([
+      const [receiptsRes, catsRes, profileRes] = await Promise.all([
         supabase
           .from('receipts')
           .select('id, supplier, receipt_date, category, total_cost, notes, project_notes, image_path, created_at')
           .eq('user_id', user.id)
           .order('receipt_date', { ascending: false }),
         supabase.from('categories').select('name, tax_deductible').eq('is_active', true),
+        supabase.from('profiles').select('tier, province').eq('id', user.id).maybeSingle(),
       ]);
 
       if (receiptsRes.error) throw receiptsRes.error;
@@ -83,6 +86,10 @@ export default function ExportScreen() {
       setTaxDeductibleCats(new Set(
         (catsRes.data || []).filter(c => c.tax_deductible).map(c => c.name)
       ));
+      if (profileRes.data) {
+        setUserTier(profileRes.data.tier ?? 'free');
+        setUserProvince(profileRes.data.province ?? '');
+      }
       setReceipts(loaded);
 
       const seen = new Set<string>();
@@ -151,7 +158,7 @@ export default function ExportScreen() {
               .createSignedUrl(r.image_path, 60 * 60 * 24 * 365);
             imageUrl = data?.signedUrl || '';
           }
-          return { ...r, imageUrl };
+          return { ...r, imageUrl, province: userProvince || undefined };
         })
       );
 
@@ -258,28 +265,48 @@ export default function ExportScreen() {
 
           {showProfilePicker && (
             <View style={styles.monthDropdown}>
-              {EXPORT_PROFILES.map(profile => (
-                <TouchableOpacity
-                  key={profile.id}
-                  style={[
-                    styles.monthOption,
-                    selectedProfileId === profile.id && styles.monthOptionActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedProfileId(profile.id);
-                    setShowProfilePicker(false);
-                  }}>
-                  <Text style={[
-                    styles.monthOptionText,
-                    selectedProfileId === profile.id && styles.monthOptionTextActive,
-                  ]}>
-                    {profile.label}
-                  </Text>
-                  <Text style={styles.profileOptionSubtext}>
-                    {profile.country} · {profile.currency}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {EXPORT_PROFILES.map(profile => {
+                const locked = PAID_PROFILE_IDS.has(profile.id) && userTier === 'free';
+                return (
+                  <TouchableOpacity
+                    key={profile.id}
+                    style={[
+                      styles.monthOption,
+                      selectedProfileId === profile.id && styles.monthOptionActive,
+                      locked && styles.monthOptionLocked,
+                    ]}
+                    onPress={() => {
+                      if (locked) {
+                        setShowProfilePicker(false);
+                        Alert.alert(
+                          'Solo or Team Required',
+                          'Canadian export profiles are available on Solo and Team plans. Upgrade to unlock.',
+                        );
+                        return;
+                      }
+                      setSelectedProfileId(profile.id);
+                      setShowProfilePicker(false);
+                    }}>
+                    <View style={styles.profileOptionRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[
+                          styles.monthOptionText,
+                          selectedProfileId === profile.id && styles.monthOptionTextActive,
+                          locked && styles.monthOptionTextLocked,
+                        ]}>
+                          {profile.label}
+                        </Text>
+                        <Text style={styles.profileOptionSubtext}>
+                          {profile.country} · {profile.currency}
+                        </Text>
+                      </View>
+                      {locked && (
+                        <Text style={styles.lockedBadge}>Solo+</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
         </View>
@@ -420,6 +447,32 @@ function getProfileInfo(profile: ExportProfile): string[] {
         'Import via Sage → Purchases → Import',
         'Receipt image links valid for 1 year',
       ];
+    case 'quickbooks-ca':
+      return [
+        'Formatted for QuickBooks Online (Canada)',
+        'Date format: MM/DD/YYYY (North American standard)',
+        'Tax codes: GST, HST, GST+PST — based on your province',
+        'Net and Tax amounts back-calculated from stored gross',
+        'Account names match QuickBooks default chart of accounts',
+        'Receipt image links valid for 1 year',
+      ];
+    case 'xero-ca':
+      return [
+        'Formatted for Xero (Canada)',
+        'Date format: DD/MM/YYYY (Xero international standard)',
+        'Tax types: GST on Expenses, HST on Expenses, GST/PST on Expenses',
+        'Net and Tax amounts back-calculated from stored gross',
+        'Receipt image links valid for 1 year',
+      ];
+    case 'sage50-ca':
+      return [
+        'Formatted for Sage 50 CA (Simply Accounting)',
+        'Date format: MM/DD/YYYY (North American standard)',
+        'Tax codes: H (HST), G (GST), GP (GST+PST), E (Exempt)',
+        'Account numbers match Sage 50 CA default chart of accounts',
+        'Net and Tax amounts back-calculated from stored gross',
+        'Receipt image links valid for 1 year',
+      ];
     default:
       return [
         'Exports as a proper .csv file attachment',
@@ -460,9 +513,18 @@ const styles = StyleSheet.create({
   },
   monthOption: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   monthOptionActive: { backgroundColor: '#fef2f2' },
+  monthOptionLocked: { opacity: 0.6 },
   monthOptionText: { fontSize: 15, color: '#374151', fontWeight: '500' },
   monthOptionTextActive: { color: '#DC2626', fontWeight: '700' },
+  monthOptionTextLocked: { color: '#9ca3af' },
   profileOptionSubtext: { fontSize: 12, color: '#9ca3af', fontWeight: '400', marginTop: 2 },
+  profileOptionRow: { flexDirection: 'row', alignItems: 'center' },
+  lockedBadge: {
+    fontSize: 11, fontWeight: '700', color: '#DC2626',
+    backgroundColor: '#fef2f2', borderRadius: 6,
+    paddingHorizontal: 6, paddingVertical: 2, overflow: 'hidden',
+    borderWidth: 1, borderColor: '#fecaca',
+  },
   summaryCard: {
     backgroundColor: '#f9fafb', borderRadius: 12, padding: 20,
     marginBottom: 24, borderWidth: 1, borderColor: '#e5e7eb',

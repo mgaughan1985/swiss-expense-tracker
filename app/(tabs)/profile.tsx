@@ -11,9 +11,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User, Mail, Lock, MapPin, LogOut, ChevronRight, Check, X } from 'lucide-react-native';
+import { User, Mail, Lock, MapPin, LogOut, ChevronRight, ChevronDown, Check, X } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import Svg, { Path, Rect } from 'react-native-svg';
+import { CANADIAN_PROVINCES, getProvinceName } from '@/lib/canada';
 
 function SwissFlag({ size = 40 }: { size?: number }) {
   return (
@@ -30,6 +31,7 @@ export default function ProfileScreen() {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingLocation, setSavingLocation] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   // Password change state
@@ -38,10 +40,12 @@ export default function ProfileScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
 
-  // Canton info — fixed for this user
-  const canton = 'Vaud';
-  const municipality = 'Grandvaux';
-  const postcode = '1091';
+  // Location state
+  const [country, setCountry] = useState<'Switzerland' | 'Canada'>('Switzerland');
+  const [province, setProvince] = useState('');
+  const [showProvincePicker, setShowProvincePicker] = useState(false);
+  const [canton, setCanton] = useState('');
+  const [municipality, setMunicipality] = useState('');
 
   useEffect(() => {
     loadProfile();
@@ -50,14 +54,67 @@ export default function ProfileScreen() {
   async function loadProfile() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setEmail(user.email || '');
-        setFullName(user.user_metadata?.full_name || '');
+      if (!user) return;
+
+      setEmail(user.email || '');
+      setFullName(user.user_metadata?.full_name || '');
+
+      // Load location from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('country, province, canton, municipality')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile) {
+        const c = profile.country === 'Canada' ? 'Canada' : 'Switzerland';
+        setCountry(c);
+        setProvince(profile.province ?? '');
+        setCanton(profile.canton ?? user.user_metadata?.canton ?? '');
+        setMunicipality(profile.municipality ?? user.user_metadata?.municipality ?? '');
+      } else {
+        // Fall back to user_metadata for users predating the profiles table
+        setCanton(user.user_metadata?.canton ?? '');
+        setMunicipality(user.user_metadata?.municipality ?? '');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSaveLocation() {
+    if (country === 'Canada' && !province) {
+      Alert.alert('Required', 'Please select your province.');
+      return;
+    }
+    setSavingLocation(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        country,
+        province: country === 'Canada' ? province : null,
+        canton: country === 'Switzerland' ? canton.trim() || null : null,
+        municipality: country === 'Switzerland' ? municipality.trim() || null : null,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+
+      // Also keep canton/municipality in user_metadata for backward compat
+      if (country === 'Switzerland') {
+        await supabase.auth.updateUser({
+          data: { canton: canton.trim() || null, municipality: municipality.trim() || null },
+        });
+      }
+      Alert.alert('Saved', 'Location updated.');
+    } catch (error) {
+      Alert.alert('Error', 'Could not update location. Please try again.');
+    } finally {
+      setSavingLocation(false);
     }
   }
 
@@ -223,13 +280,91 @@ export default function ProfileScreen() {
               <View style={styles.fieldIcon}>
                 <MapPin size={18} color="#DC2626" strokeWidth={2.5} />
               </View>
-              <Text style={styles.fieldLabel}>Canton & Municipality</Text>
+              <Text style={styles.fieldLabel}>Country</Text>
             </View>
-            <View style={styles.locationRow}>
-              <SwissFlag size={20} />
-              <Text style={styles.locationText}>{canton} — {municipality} ({postcode})</Text>
+            <View style={[styles.countryToggle, { marginLeft: 42 }]}>
+              <TouchableOpacity
+                style={[styles.countryOption, country === 'Switzerland' && styles.countryOptionActive]}
+                onPress={() => { setCountry('Switzerland'); setProvince(''); }}>
+                <Text style={[styles.countryOptionText, country === 'Switzerland' && styles.countryOptionTextActive]}>
+                  Switzerland
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.countryOption, country === 'Canada' && styles.countryOptionActive]}
+                onPress={() => { setCountry('Canada'); setCanton(''); setMunicipality(''); }}>
+                <Text style={[styles.countryOptionText, country === 'Canada' && styles.countryOptionTextActive]}>
+                  Canada
+                </Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.fieldHint}>Used for tax calculations. Update in settings when needed.</Text>
+
+            {/* Canada: Province */}
+            {country === 'Canada' && (
+              <View style={{ marginTop: 14 }}>
+                <Text style={styles.sublabel}>Province</Text>
+                <TouchableOpacity
+                  style={[styles.pickerButton, { marginLeft: 42 }]}
+                  onPress={() => setShowProvincePicker(!showProvincePicker)}>
+                  <Text style={[styles.pickerButtonText, !province && styles.pickerPlaceholder]}>
+                    {province ? getProvinceName(province) : 'Select province'}
+                  </Text>
+                  <ChevronDown size={16} color="#9CA3AF" />
+                </TouchableOpacity>
+                {showProvincePicker && (
+                  <View style={[styles.pickerDropdown, { marginLeft: 42 }]}>
+                    {CANADIAN_PROVINCES.map(p => (
+                      <TouchableOpacity
+                        key={p.code}
+                        style={[styles.pickerOption, province === p.code && styles.pickerOptionActive]}
+                        onPress={() => { setProvince(p.code); setShowProvincePicker(false); }}>
+                        <Text style={[styles.pickerOptionText, province === p.code && styles.pickerOptionTextActive]}>
+                          {p.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Switzerland: Canton + Municipality */}
+            {country === 'Switzerland' && (
+              <View style={{ marginTop: 14, gap: 10 }}>
+                <View style={styles.fieldInputRow}>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={canton}
+                    onChangeText={setCanton}
+                    placeholder="Canton (e.g. Vaud)"
+                    placeholderTextColor="#9CA3AF"
+                    autoCorrect={false}
+                  />
+                </View>
+                <View style={styles.fieldInputRow}>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={municipality}
+                    onChangeText={setMunicipality}
+                    placeholder="Municipality (e.g. Grandvaux)"
+                    placeholderTextColor="#9CA3AF"
+                    autoCorrect={false}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Save location button */}
+            <TouchableOpacity
+              style={[styles.saveLocationButton, { marginLeft: 42 }]}
+              onPress={handleSaveLocation}
+              disabled={savingLocation}>
+              {savingLocation
+                ? <ActivityIndicator size="small" color="#ffffff" />
+                : <><Check size={14} color="#ffffff" strokeWidth={3} /><Text style={styles.saveLocationText}>Save Location</Text></>}
+            </TouchableOpacity>
+
+            <Text style={styles.fieldHint}>Used for tax calculations and export profiles.</Text>
           </View>
         </View>
 
@@ -403,4 +538,67 @@ const styles = StyleSheet.create({
     justifyContent: 'center', marginTop: 32, gap: 12,
   },
   swissLine: { width: 60, height: 1, backgroundColor: '#e5e7eb' },
+
+  sublabel: { fontSize: 12, fontWeight: '600', color: '#6B7280', marginBottom: 6, marginLeft: 42 },
+
+  countryToggle: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
+  countryOption: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+  },
+  countryOptionActive: { backgroundColor: '#DC2626' },
+  countryOptionText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  countryOptionTextActive: { color: '#ffffff' },
+
+  pickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  pickerButtonText: { fontSize: 15, color: '#111827' },
+  pickerPlaceholder: { color: '#9CA3AF' },
+  pickerDropdown: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    marginTop: 4,
+    maxHeight: 220,
+    overflow: 'hidden',
+  },
+  pickerOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  pickerOptionActive: { backgroundColor: '#fef2f2' },
+  pickerOptionText: { fontSize: 14, color: '#374151', fontWeight: '500' },
+  pickerOptionTextActive: { color: '#DC2626', fontWeight: '700' },
+
+  saveLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#DC2626',
+  },
+  saveLocationText: { fontSize: 14, color: '#ffffff', fontWeight: '700' },
 });
