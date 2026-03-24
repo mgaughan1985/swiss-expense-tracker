@@ -13,17 +13,9 @@ import {
 import { useRouter } from 'expo-router';
 import { User, Mail, Lock, MapPin, LogOut, ChevronRight, ChevronDown, Check, X } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-import Svg, { Path, Rect } from 'react-native-svg';
 import { CANADIAN_PROVINCES, getProvinceName } from '@/lib/canada';
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill="#DC2626" />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -196,7 +188,7 @@ export default function ProfileScreen() {
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#DC2626" />
+          <ActivityIndicator size="large" color="#F59E0B" />
         </View>
       </View>
     );
@@ -236,7 +228,7 @@ export default function ProfileScreen() {
           <View style={styles.fieldCard}>
             <View style={styles.fieldHeader}>
               <View style={styles.fieldIcon}>
-                <User size={18} color="#DC2626" strokeWidth={2.5} />
+                <User size={18} color="#F59E0B" strokeWidth={2.5} />
               </View>
               <Text style={styles.fieldLabel}>Full Name</Text>
             </View>
@@ -263,7 +255,7 @@ export default function ProfileScreen() {
           <View style={styles.fieldCard}>
             <View style={styles.fieldHeader}>
               <View style={styles.fieldIcon}>
-                <Mail size={18} color="#DC2626" strokeWidth={2.5} />
+                <Mail size={18} color="#F59E0B" strokeWidth={2.5} />
               </View>
               <Text style={styles.fieldLabel}>Email</Text>
             </View>
@@ -278,7 +270,7 @@ export default function ProfileScreen() {
           <View style={styles.fieldCard}>
             <View style={styles.fieldHeader}>
               <View style={styles.fieldIcon}>
-                <MapPin size={18} color="#DC2626" strokeWidth={2.5} />
+                <MapPin size={18} color="#F59E0B" strokeWidth={2.5} />
               </View>
               <Text style={styles.fieldLabel}>Country</Text>
             </View>
@@ -376,7 +368,7 @@ export default function ProfileScreen() {
               style={styles.fieldHeader}
               onPress={() => setShowPasswordForm(!showPasswordForm)}>
               <View style={styles.fieldIcon}>
-                <Lock size={18} color="#DC2626" strokeWidth={2.5} />
+                <Lock size={18} color="#F59E0B" strokeWidth={2.5} />
               </View>
               <Text style={styles.fieldLabel}>Change Password</Text>
               <ChevronRight
@@ -435,15 +427,15 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} disabled={loggingOut}>
             {loggingOut
-              ? <ActivityIndicator size="small" color="#DC2626" />
-              : <LogOut size={20} color="#DC2626" strokeWidth={2.5} />}
+              ? <ActivityIndicator size="small" color="#F59E0B" />
+              : <LogOut size={20} color="#F59E0B" strokeWidth={2.5} />}
             <Text style={styles.logoutText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.swissDecoration}>
           <View style={styles.swissLine} />
-          <SwissFlag size={16} />
+          <BeaconFileLogo size={20} variant="light" />
           <View style={styles.swissLine} />
         </View>
       </ScrollView>
@@ -452,20 +444,19 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: '#FEF9EE' },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1E293B',
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', letterSpacing: -0.3 },
+  headerTitle: { fontSize: 18, fontWeight: '500', color: '#FEF9EE', letterSpacing: -0.3, fontFamily: 'DMSans_500Medium' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: 60 },
@@ -473,7 +464,7 @@ const styles = StyleSheet.create({
   avatarSection: { alignItems: 'center', paddingVertical: 32, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   avatar: {
     width: 80, height: 80, borderRadius: 40,
-    backgroundColor: '#DC2626', justifyContent: 'center', alignItems: 'center', marginBottom: 12,
+    backgroundColor: '#1E293B', justifyContent: 'center', alignItems: 'center', marginBottom: 12,
   },
   avatarText: { fontSize: 32, fontWeight: '700', color: '#ffffff' },
   avatarName: { fontSize: 20, fontWeight: '700', color: '#111827', letterSpacing: -0.3, marginBottom: 4 },
@@ -502,7 +493,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     width: 36, height: 36, borderRadius: 8,
-    backgroundColor: '#DC2626', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#F59E0B', justifyContent: 'center', alignItems: 'center',
   },
 
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 42 },
@@ -522,7 +513,7 @@ const styles = StyleSheet.create({
   cancelButtonText: { fontSize: 14, color: '#6B7280', fontWeight: '600' },
   updatePasswordButton: {
     flex: 2, paddingVertical: 10, borderRadius: 8,
-    backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#F59E0B', alignItems: 'center', justifyContent: 'center',
   },
   updatePasswordText: { fontSize: 14, color: '#ffffff', fontWeight: '700' },
 
@@ -554,7 +545,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f9fafb',
   },
-  countryOptionActive: { backgroundColor: '#DC2626' },
+  countryOptionActive: { backgroundColor: '#F59E0B' },
   countryOptionText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
   countryOptionTextActive: { color: '#ffffff' },
 
@@ -586,9 +577,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
-  pickerOptionActive: { backgroundColor: '#fef2f2' },
+  pickerOptionActive: { backgroundColor: '#FFFBEB' },
   pickerOptionText: { fontSize: 14, color: '#374151', fontWeight: '500' },
-  pickerOptionTextActive: { color: '#DC2626', fontWeight: '700' },
+  pickerOptionTextActive: { color: '#D97706', fontWeight: '700' },
 
   saveLocationButton: {
     flexDirection: 'row',
@@ -598,7 +589,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#DC2626',
+    backgroundColor: '#F59E0B',
   },
   saveLocationText: { fontSize: 14, color: '#ffffff', fontWeight: '700' },
 });

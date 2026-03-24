@@ -23,16 +23,7 @@ import { Receipt } from '@/types/database';
 import type { Category } from '@/types/database';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ArrowLeft, Check, X, Edit, Save, Calendar } from 'lucide-react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
-
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill="#DC2626" />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
 type Mode = 'view' | 'edit' | 'reject';
 
@@ -244,7 +235,7 @@ export default function ReviewDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#DC2626" />
+        <ActivityIndicator size="large" color="#F59E0B" />
       </View>
     );
   }
@@ -262,10 +253,10 @@ export default function ReviewDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#111827" strokeWidth={2.5} />
+          <ArrowLeft size={24} color="#FEF9EE" strokeWidth={2.5} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <SwissFlag size={28} />
+          <BeaconFileLogo size={28} variant="light" />
           <Text style={styles.headerTitle}>
             {mode === 'edit' ? 'Edit & Approve' : mode === 'reject' ? 'Reject Receipt' : 'Review Receipt'}
           </Text>
@@ -310,7 +301,7 @@ export default function ReviewDetailScreen() {
               <View style={styles.field}>
                 <Text style={styles.label}>Date <Text style={styles.required}>*</Text></Text>
                 <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-                  <Calendar size={20} color="#DC2626" strokeWidth={2.5} />
+                  <Calendar size={20} color="#F59E0B" strokeWidth={2.5} />
                   <Text style={styles.dateButtonText}>
                     {receiptDate.toLocaleDateString('en-CH', { day: '2-digit', month: 'long', year: 'numeric' })}
                   </Text>
@@ -465,7 +456,7 @@ export default function ReviewDetailScreen() {
                 {saving
                   ? <ActivityIndicator size="small" color="#ffffff" />
                   : <>
-                      <Check size={20} color="#ffffff" strokeWidth={2.5} />
+                      <Check size={20} color="#1E293B" strokeWidth={2.5} />
                       <Text style={styles.approveButtonText}>Approve</Text>
                     </>}
               </TouchableOpacity>
@@ -475,7 +466,7 @@ export default function ReviewDetailScreen() {
                   style={styles.editApproveButton}
                   onPress={() => setMode('edit')}
                   disabled={saving}>
-                  <Edit size={18} color="#DC2626" strokeWidth={2.5} />
+                  <Edit size={18} color="#D97706" strokeWidth={2.5} />
                   <Text style={styles.editApproveText}>Edit &amp; Approve</Text>
                 </TouchableOpacity>
 
@@ -506,7 +497,7 @@ export default function ReviewDetailScreen() {
                 {saving
                   ? <ActivityIndicator size="small" color="#ffffff" />
                   : <>
-                      <Save size={18} color="#ffffff" strokeWidth={2.5} />
+                      <Save size={18} color="#1E293B" strokeWidth={2.5} />
                       <Text style={styles.approveButtonText}>Save &amp; Approve</Text>
                     </>}
               </TouchableOpacity>
@@ -548,23 +539,22 @@ const styles = StyleSheet.create({
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' },
   errorText: { fontSize: 18, color: '#6b7280' },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1E293B',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomWidth: 0,
   },
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginLeft: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', letterSpacing: -0.3 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#FEF9EE', letterSpacing: -0.3 },
   content: { flex: 1 },
   imageContainer: {
-    backgroundColor: '#fef2f2', padding: 16,
-    borderBottomWidth: 2, borderBottomColor: '#DC2626',
+    backgroundColor: '#FFFBEB', padding: 16,
+    borderBottomWidth: 2, borderBottomColor: '#F59E0B',
   },
   image: { width: '100%', height: 280, borderRadius: 12, backgroundColor: '#f3f4f6' },
   section: { backgroundColor: '#ffffff', padding: 20, marginTop: 12 },
@@ -587,42 +577,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 10,
     borderRadius: 20, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#ffffff',
   },
-  categoryChipActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
+  categoryChipActive: { backgroundColor: '#F59E0B', borderColor: '#F59E0B' },
   categoryChipText: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
   categoryChipTextActive: { color: '#ffffff', fontWeight: '700' },
   amountInputContainer: {
     flexDirection: 'row', alignItems: 'center', borderWidth: 1,
     borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff', overflow: 'hidden',
   },
-  currencySymbol: { fontSize: 16, fontWeight: '700', color: '#DC2626', paddingLeft: 12, paddingRight: 8 },
+  currencySymbol: { fontSize: 16, fontWeight: '700', color: '#F59E0B', paddingLeft: 12, paddingRight: 8 },
   amountInput: { flex: 1, padding: 12, paddingLeft: 0, fontSize: 16, color: '#111827', fontWeight: '600' },
   detailRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   detailLabel: { fontSize: 12, color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   detailValue: { fontSize: 16, color: '#111827', fontWeight: '500' },
-  amountValue: { fontSize: 22, color: '#DC2626', fontWeight: '700', letterSpacing: -0.5 },
+  amountValue: { fontSize: 22, color: '#1E293B', fontWeight: '700', letterSpacing: -0.5 },
   categoryBadge: {
-    alignSelf: 'flex-start', backgroundColor: '#fef2f2',
+    alignSelf: 'flex-start', backgroundColor: '#FFFBEB',
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12,
-    borderWidth: 1, borderColor: '#fecaca',
+    borderWidth: 1, borderColor: '#FCD34D',
   },
-  categoryBadgeText: { fontSize: 14, color: '#DC2626', fontWeight: '600' },
+  categoryBadgeText: { fontSize: 14, color: '#D97706', fontWeight: '600' },
   notesValue: { fontSize: 16, color: '#374151', lineHeight: 24 },
-  projectNotesValue: { color: '#DC2626', fontWeight: '600' },
+  projectNotesValue: { color: '#D97706', fontWeight: '600' },
   rejectSection: { backgroundColor: '#ffffff', padding: 20, marginTop: 12 },
   rejectSectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 12 },
   actionsSection: { padding: 20, gap: 12 },
   approveButton: {
-    backgroundColor: '#16a34a', borderRadius: 10, paddingVertical: 16,
+    backgroundColor: '#F59E0B', borderRadius: 10, paddingVertical: 16,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
-  approveButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  approveButtonText: { color: '#1E293B', fontSize: 16, fontWeight: '700', fontFamily: 'DMSans_500Medium' },
   secondaryRow: { flexDirection: 'row', gap: 12 },
   editApproveButton: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderRadius: 10, paddingVertical: 14, borderWidth: 2, borderColor: '#DC2626',
-    backgroundColor: '#fef2f2', gap: 6,
+    borderRadius: 10, paddingVertical: 14, borderWidth: 2, borderColor: '#F59E0B',
+    backgroundColor: '#FFFBEB', gap: 6,
   },
-  editApproveText: { fontSize: 15, fontWeight: '700', color: '#DC2626' },
+  editApproveText: { fontSize: 15, fontWeight: '700', color: '#D97706' },
   rejectButton: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     borderRadius: 10, paddingVertical: 14, borderWidth: 1, borderColor: '#d1d5db',

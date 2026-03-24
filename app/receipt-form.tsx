@@ -21,16 +21,7 @@ import { getActiveMembership } from '@/lib/organisation';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ArrowLeft, Calendar, Save } from 'lucide-react-native';
 import type { Category } from '@/types/database';
-import Svg, { Path, Rect } from 'react-native-svg';
-
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill="#DC2626" />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
 export default function ReceiptFormScreen() {
   const params = useLocalSearchParams();
@@ -248,8 +239,8 @@ export default function ReceiptFormScreen() {
   if (isLoadingCategories) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <SwissFlag size={48} />
-        <ActivityIndicator size="large" color="#DC2626" style={{ marginTop: 16 }} />
+        <BeaconFileLogo size={48} variant="dark" />
+        <ActivityIndicator size="large" color="#F59E0B" style={{ marginTop: 16 }} />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
@@ -264,10 +255,10 @@ export default function ReceiptFormScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
-          <ArrowLeft size={24} color="#111827" strokeWidth={2.5} />
+          <ArrowLeft size={24} color="#FEF9EE" strokeWidth={2.5} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <SwissFlag size={28} />
+          <BeaconFileLogo size={28} variant="light" />
           <Text style={styles.headerTitle}>Add Receipt</Text>
         </View>
         <View style={styles.placeholder} />
@@ -335,7 +326,7 @@ export default function ReceiptFormScreen() {
             <TouchableOpacity
               style={styles.dateButton}
               onPress={() => setShowDatePicker(true)}>
-              <Calendar size={20} color="#DC2626" strokeWidth={2.5} />
+              <Calendar size={20} color="#F59E0B" strokeWidth={2.5} />
               <Text style={styles.dateButtonText}>
                 {receiptDate.toLocaleDateString('en-CH', {
                   day: '2-digit', month: 'long', year: 'numeric',
@@ -436,10 +427,10 @@ export default function ReceiptFormScreen() {
             onPress={handleSave}
             disabled={isSaving}>
             {isSaving ? (
-              <ActivityIndicator size="small" color="#ffffff" />
+              <ActivityIndicator size="small" color="#1E293B" />
             ) : (
               <>
-                <Save size={20} color="#ffffff" strokeWidth={2.5} />
+                <Save size={20} color="#1E293B" strokeWidth={2.5} />
                 <Text style={styles.saveButtonText}>Save Receipt</Text>
               </>
             )}
@@ -457,25 +448,24 @@ const styles = StyleSheet.create({
   loadingContainer: { justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280', fontWeight: '500' },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1E293B',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomWidth: 0,
   },
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', letterSpacing: -0.3 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#FEF9EE', letterSpacing: -0.3 },
   placeholder: { width: 40 },
   content: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
   imageContainer: {
-    backgroundColor: '#fef2f2', padding: 16,
-    borderBottomWidth: 2, borderBottomColor: '#DC2626',
+    backgroundColor: '#FFFBEB', padding: 16,
+    borderBottomWidth: 2, borderBottomColor: '#F59E0B',
   },
   image: {
     width: '100%', height: 200, borderRadius: 12,
@@ -520,7 +510,7 @@ const styles = StyleSheet.create({
     borderRadius: 20, borderWidth: 1, borderColor: '#d1d5db',
     backgroundColor: '#ffffff', gap: 6,
   },
-  categoryChipActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
+  categoryChipActive: { backgroundColor: '#F59E0B', borderColor: '#F59E0B' },
   categoryChipText: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
   categoryChipTextActive: { color: '#ffffff', fontWeight: '700' },
   taxBadge: {
@@ -533,12 +523,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8,
     backgroundColor: '#ffffff', overflow: 'hidden',
   },
-  currencySymbol: { fontSize: 16, fontWeight: '700', color: '#DC2626', paddingLeft: 12, paddingRight: 8 },
+  currencySymbol: { fontSize: 16, fontWeight: '700', color: '#F59E0B', paddingLeft: 12, paddingRight: 8 },
   amountInput: { flex: 1, padding: 12, paddingLeft: 0, fontSize: 16, color: '#111827', fontWeight: '600' },
   saveButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#DC2626', padding: 16, borderRadius: 8, marginTop: 8, gap: 8,
+    backgroundColor: '#F59E0B', padding: 16, borderRadius: 8, marginTop: 8, gap: 8,
   },
   saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  saveButtonText: { color: '#1E293B', fontSize: 16, fontWeight: '700', letterSpacing: -0.2, fontFamily: 'DMSans_500Medium' },
 });

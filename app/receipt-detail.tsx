@@ -20,16 +20,7 @@ import { Receipt } from '@/types/database';
 import type { Category } from '@/types/database';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ArrowLeft, Edit, Trash2, Save, X, Calendar, Send, RotateCcw } from 'lucide-react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
-
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill="#DC2626" />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; border: string; text: string }> = {
   draft:     { label: 'Draft',     bg: '#f3f4f6', border: '#d1d5db', text: '#6b7280' },
@@ -304,7 +295,7 @@ export default function ReceiptDetailScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#DC2626" />
+        <ActivityIndicator size="large" color="#F59E0B" />
       </View>
     );
   }
@@ -331,17 +322,17 @@ export default function ReceiptDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#111827" strokeWidth={2.5} />
+          <ArrowLeft size={24} color="#FEF9EE" strokeWidth={2.5} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <SwissFlag size={28} />
+          <BeaconFileLogo size={28} variant="light" />
           <Text style={styles.headerTitle}>Receipt Details</Text>
         </View>
         <View style={styles.headerActions}>
           {!isEditing && canEdit && (
             <>
               <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.iconButton}>
-                <Edit size={22} color="#DC2626" strokeWidth={2.5} />
+                <Edit size={22} color="#F59E0B" strokeWidth={2.5} />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
                 <Trash2 size={22} color="#6b7280" strokeWidth={2.5} />
@@ -390,7 +381,7 @@ export default function ReceiptDetailScreen() {
               <View style={styles.field}>
                 <Text style={styles.label}>Date <Text style={styles.required}>*</Text></Text>
                 <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-                  <Calendar size={20} color="#DC2626" strokeWidth={2.5} />
+                  <Calendar size={20} color="#F59E0B" strokeWidth={2.5} />
                   <Text style={styles.dateButtonText}>
                     {receiptDate.toLocaleDateString('en-CH', { day: '2-digit', month: 'long', year: 'numeric' })}
                   </Text>
@@ -486,7 +477,7 @@ export default function ReceiptDetailScreen() {
                   {isSaving
                     ? <ActivityIndicator size="small" color="#ffffff" />
                     : <>
-                        <Save size={18} color="#ffffff" strokeWidth={2.5} />
+                        <Save size={18} color="#1E293B" strokeWidth={2.5} />
                         <Text style={styles.saveButtonText}>Save Changes</Text>
                       </>}
                 </TouchableOpacity>
@@ -565,7 +556,7 @@ export default function ReceiptDetailScreen() {
                   {isSubmitting
                     ? <ActivityIndicator size="small" color="#ffffff" />
                     : <>
-                        <Send size={18} color="#ffffff" strokeWidth={2.5} />
+                        <Send size={18} color="#1E293B" strokeWidth={2.5} />
                         <Text style={styles.submitButtonText}>Submit for Review</Text>
                       </>}
                 </TouchableOpacity>
@@ -597,25 +588,24 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb' },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1E293B',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomWidth: 0,
   },
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginLeft: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827', letterSpacing: -0.3 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#FEF9EE', letterSpacing: -0.3 },
   headerActions: { flexDirection: 'row', gap: 4 },
   iconButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   content: { flex: 1 },
   imageContainer: {
-    backgroundColor: '#fef2f2', padding: 16,
-    borderBottomWidth: 2, borderBottomColor: '#DC2626',
+    backgroundColor: '#FFFBEB', padding: 16,
+    borderBottomWidth: 2, borderBottomColor: '#F59E0B',
   },
   image: { width: '100%', height: 280, borderRadius: 12, backgroundColor: '#f3f4f6' },
   section: { backgroundColor: '#ffffff', padding: 20, marginTop: 12 },
@@ -651,14 +641,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 10,
     borderRadius: 20, borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#ffffff',
   },
-  categoryChipActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
+  categoryChipActive: { backgroundColor: '#F59E0B', borderColor: '#F59E0B' },
   categoryChipText: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
   categoryChipTextActive: { color: '#ffffff', fontWeight: '700' },
   amountInputContainer: {
     flexDirection: 'row', alignItems: 'center', borderWidth: 1,
     borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff', overflow: 'hidden',
   },
-  currencySymbol: { fontSize: 16, fontWeight: '700', color: '#DC2626', paddingLeft: 12, paddingRight: 8 },
+  currencySymbol: { fontSize: 16, fontWeight: '700', color: '#F59E0B', paddingLeft: 12, paddingRight: 8 },
   amountInput: { flex: 1, padding: 12, paddingLeft: 0, fontSize: 16, color: '#111827', fontWeight: '600' },
   actionButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
   actionButton: {
@@ -667,25 +657,25 @@ const styles = StyleSheet.create({
   },
   cancelButton: { backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#d1d5db' },
   cancelButtonText: { fontSize: 15, fontWeight: '600', color: '#6b7280' },
-  saveButton: { backgroundColor: '#DC2626' },
+  saveButton: { backgroundColor: '#F59E0B' },
   saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
+  saveButtonText: { fontSize: 15, fontWeight: '700', color: '#1E293B', fontFamily: 'DMSans_500Medium' },
   detailRow: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   detailLabel: { fontSize: 12, color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   detailValue: { fontSize: 16, color: '#111827', fontWeight: '500' },
-  amountValue: { fontSize: 22, color: '#DC2626', fontWeight: '700', letterSpacing: -0.5 },
+  amountValue: { fontSize: 22, color: '#1E293B', fontWeight: '700', letterSpacing: -0.5 },
   categoryBadge: {
-    alignSelf: 'flex-start', backgroundColor: '#fef2f2',
+    alignSelf: 'flex-start', backgroundColor: '#FFFBEB',
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12,
-    borderWidth: 1, borderColor: '#fecaca',
+    borderWidth: 1, borderColor: '#FCD34D',
   },
-  categoryBadgeText: { fontSize: 14, color: '#DC2626', fontWeight: '600' },
+  categoryBadgeText: { fontSize: 14, color: '#D97706', fontWeight: '600' },
   notesValue: { fontSize: 16, color: '#374151', lineHeight: 24 },
   submitButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#DC2626', borderRadius: 8, paddingVertical: 14, marginTop: 20, gap: 8,
+    backgroundColor: '#F59E0B', borderRadius: 8, paddingVertical: 14, marginTop: 20, gap: 8,
   },
-  submitButtonText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
+  submitButtonText: { fontSize: 15, fontWeight: '700', color: '#1E293B', fontFamily: 'DMSans_500Medium' },
   resubmitButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#fffbeb', borderRadius: 8, paddingVertical: 14, marginTop: 20,
@@ -693,6 +683,6 @@ const styles = StyleSheet.create({
   },
   resubmitButtonText: { fontSize: 15, fontWeight: '700', color: '#92400e' },
   errorText: { fontSize: 18, color: '#6b7280', marginBottom: 20 },
-  button: { backgroundColor: '#DC2626', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
-  buttonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
+  button: { backgroundColor: '#F59E0B', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
+  buttonText: { color: '#1E293B', fontSize: 16, fontWeight: '600' },
 });

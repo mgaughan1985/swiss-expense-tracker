@@ -19,16 +19,7 @@ import { withRetry, getErrorMessage } from '@/lib/withRetry';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { getActiveMembership, isManager, OrgMembership } from '@/lib/organisation';
 import { ChevronRight, CheckSquare, Square, CheckCheck, Inbox } from 'lucide-react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
-
-function SwissFlag({ size = 40 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 32 32">
-      <Rect width="32" height="32" fill="#DC2626" />
-      <Path d="M13 9h6v5h5v4h-5v5h-6v-5H8v-4h5V9z" fill="white" />
-    </Svg>
-  );
-}
+import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 
 interface QueueItem {
   id: string;
@@ -163,7 +154,7 @@ export default function ReviewScreen() {
           onPress={() => toggleSelect(item.id)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           {isSelected
-            ? <CheckSquare size={22} color="#DC2626" strokeWidth={2.5} />
+            ? <CheckSquare size={22} color="#F59E0B" strokeWidth={2.5} />
             : <Square size={22} color="#d1d5db" strokeWidth={2} />}
         </TouchableOpacity>
 
@@ -195,11 +186,11 @@ export default function ReviewScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <SwissFlag size={32} />
+          <BeaconFileLogo size={32} variant="light" />
           <Text style={styles.headerTitle}>Review Queue</Text>
         </View>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#DC2626" />
+          <ActivityIndicator size="large" color="#F59E0B" />
         </View>
       </View>
     );
@@ -211,7 +202,7 @@ export default function ReviewScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <SwissFlag size={32} />
+          <BeaconFileLogo size={32} variant="light" />
           <Text style={styles.headerTitle}>Review Queue</Text>
         </View>
         <View style={styles.centerContainer}>
@@ -234,7 +225,7 @@ export default function ReviewScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <SwissFlag size={32} />
+          <BeaconFileLogo size={32} variant="light" />
           <View>
             <Text style={styles.headerTitle}>Review Queue</Text>
             <Text style={styles.headerSubtitle}>{membership.name}</Text>
@@ -283,8 +274,8 @@ export default function ReviewScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={() => { setRefreshing(true); loadData(); }}
-                tintColor="#DC2626"
-                colors={['#DC2626']}
+                tintColor="#F59E0B"
+                colors={['#F59E0B']}
               />
             }
             showsVerticalScrollIndicator={false}
@@ -316,21 +307,20 @@ export default function ReviewScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1E293B',
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#111827', letterSpacing: -0.5 },
-  headerSubtitle: { fontSize: 12, color: '#6b7280', fontWeight: '500', marginTop: 1 },
+  headerTitle: { fontSize: 22, fontWeight: '500', color: '#FEF9EE', letterSpacing: -0.5, fontFamily: 'DMSans_500Medium' },
+  headerSubtitle: { fontSize: 12, color: 'rgba(254,249,238,0.55)', fontWeight: '400', marginTop: 1 },
   selectAllButton: { paddingVertical: 6, paddingHorizontal: 10 },
-  selectAllText: { fontSize: 14, fontWeight: '600', color: '#DC2626' },
+  selectAllText: { fontSize: 14, fontWeight: '500', color: '#F59E0B', fontFamily: 'DMSans_500Medium' },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
   emptyIconContainer: {
     width: 80, height: 80, borderRadius: 40,
@@ -349,7 +339,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   queueCount: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
-  selectedCount: { fontSize: 14, fontWeight: '700', color: '#DC2626' },
+  selectedCount: { fontSize: 14, fontWeight: '700', color: '#D97706' },
   listContent: { paddingVertical: 8, paddingHorizontal: 16, paddingBottom: 120 },
   card: {
     backgroundColor: '#ffffff',
@@ -362,17 +352,17 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
     gap: 10,
   },
-  cardSelected: { borderColor: '#DC2626', backgroundColor: '#fef2f2' },
+  cardSelected: { borderColor: '#F59E0B', backgroundColor: '#FFFBEB' },
   checkboxArea: { padding: 2 },
   cardBody: { flex: 1 },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   cardSupplier: { fontSize: 15, fontWeight: '700', color: '#111827', flex: 1, letterSpacing: -0.2 },
-  cardAmount: { fontSize: 15, fontWeight: '700', color: '#DC2626', letterSpacing: -0.3 },
+  cardAmount: { fontSize: 15, fontWeight: '700', color: '#1E293B', letterSpacing: -0.3 },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   cardDate: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
   dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: '#d1d5db' },
   cardCategory: { fontSize: 12, color: '#6b7280', fontWeight: '500' },
-  cardProjectNotes: { fontSize: 12, color: '#DC2626', fontWeight: '600', marginTop: 4 },
+  cardProjectNotes: { fontSize: 12, color: '#D97706', fontWeight: '600', marginTop: 4 },
   bulkBar: {
     position: 'absolute',
     bottom: 0,
@@ -386,7 +376,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
   },
   bulkApproveButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#F59E0B',
     borderRadius: 10,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -395,5 +385,5 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   bulkApproveDisabled: { opacity: 0.5 },
-  bulkApproveText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  bulkApproveText: { color: '#1E293B', fontSize: 16, fontWeight: '500', fontFamily: 'DMSans_500Medium' },
 });
