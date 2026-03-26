@@ -173,7 +173,7 @@ export default function CameraScreen() {
       {/* Instructions */}
       <View style={styles.content}>
         <View style={styles.instructionsCard}>
-          <Camera size={64} color="#DC2626" />
+          <Camera size={64} color="#F59E0B" />
           <Text style={styles.instructionsTitle}>Ready to Scan</Text>
           <Text style={styles.instructionsText}>
             Tap the button below to open your camera. After taking the photo, you'll be able to crop it to focus on the receipt.
@@ -288,6 +288,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#F59E0B',
     shadowColor: '#DC2626',
     padding: 18,
     borderRadius: 12,
