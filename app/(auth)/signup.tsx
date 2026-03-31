@@ -15,7 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Eye, EyeOff, ArrowLeft, ChevronDown } from 'lucide-react-native';
-import { colors, spacing, borderRadius } from '@/theme';
+import { colors, spacing, borderRadius, typography } from '@/theme';
 import { CANADIAN_PROVINCES } from '@/lib/canada';
 import { BeaconFileLogo } from '@/components/BeaconFileLogo';
 

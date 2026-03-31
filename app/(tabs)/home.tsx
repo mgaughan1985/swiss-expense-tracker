@@ -41,6 +41,7 @@ export default function HomeScreen() {
   const [stats, setStats] = useState<MonthStats>({ total: 0, count: 0, byCategory: [] });
   const [loadingStats, setLoadingStats] = useState(true);
   const [monthLabel, setMonthLabel] = useState('');
+  const [currency, setCurrency] = useState('CHF');
   const [pendingPhoto, setPendingPhoto] = useState<{
     uri: string;
     width: number;
@@ -58,6 +59,13 @@ export default function HomeScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('country')
+        .eq('id', user.id)
+        .maybeSingle();
+      setCurrency(profile?.country === 'Canada' ? 'CAD' : 'CHF');
 
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
@@ -270,7 +278,7 @@ export default function HomeScreen() {
             <>
               <View style={styles.statsRow}>
                 <View style={styles.statBox}>
-                  <Text style={styles.statValue}>CHF {stats.total.toFixed(2)}</Text>
+                  <Text style={styles.statValue}>{currency} {stats.total.toFixed(2)}</Text>
                   <Text style={styles.statLabel}>Total Spent</Text>
                 </View>
                 <View style={styles.statDivider} />
@@ -291,7 +299,7 @@ export default function HomeScreen() {
                         <View style={styles.categoryLabelRow}>
                           <View style={[styles.categoryDot, { backgroundColor: color }]} />
                           <Text style={styles.categoryName}>{category}</Text>
-                          <Text style={styles.categoryAmount}>CHF {amount.toFixed(2)}</Text>
+                          <Text style={styles.categoryAmount}>{currency} {amount.toFixed(2)}</Text>
                         </View>
                         <View style={styles.barTrack}>
                           <View style={[styles.barFill, { width: `${pct}%` as any, backgroundColor: color }]} />
