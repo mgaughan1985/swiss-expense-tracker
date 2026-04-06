@@ -68,7 +68,7 @@ export default function ExportScreen() {
           .eq('user_id', user.id)
           .order('receipt_date', { ascending: false }),
         supabase.from('categories').select('name, tax_deductible').eq('is_active', true),
-        supabase.from('profiles').select('tier, province').eq('id', user.id).maybeSingle(),
+        supabase.from('profiles').select('tier, province, country').eq('id', user.id).maybeSingle(),
       ]);
 
       if (receiptsRes.error) throw receiptsRes.error;
@@ -80,6 +80,9 @@ export default function ExportScreen() {
       if (profileRes.data) {
         setUserTier(profileRes.data.tier ?? 'free');
         setUserProvince(profileRes.data.province ?? '');
+        if (profileRes.data.country === 'Canada') {
+          setSelectedProfileId('quickbooks-ca');
+        }
       }
       setReceipts(loaded);
 

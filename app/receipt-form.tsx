@@ -41,6 +41,7 @@ export default function ReceiptFormScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [banner, setBanner] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
+  const [currency, setCurrency] = useState('CHF');
 
   // Autocomplete state
   const [supplierSuggestions, setSupplierSuggestions] = useState<string[]>([]);
@@ -52,8 +53,24 @@ export default function ReceiptFormScreen() {
     loadCategories();
     loadSupplierHistory();
     loadOrg();
+    loadCurrency();
     if (imagePath) loadImage();
   }, [imagePath]);
+
+  async function loadCurrency() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('country')
+        .eq('id', user.id)
+        .maybeSingle();
+      setCurrency(profile?.country === 'Canada' ? 'CAD' : 'CHF');
+    } catch (error) {
+      console.error('Error loading currency:', error);
+    }
+  }
 
   async function loadOrg() {
     const membership = await getActiveMembership();
@@ -381,7 +398,7 @@ export default function ReceiptFormScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>Total Amount <Text style={styles.required}>*</Text></Text>
             <View style={styles.amountInputContainer}>
-              <Text style={styles.currencySymbol}>CHF</Text>
+              <Text style={styles.currencySymbol}>{currency}</Text>
               <TextInput
                 style={styles.amountInput}
                 value={totalCost}

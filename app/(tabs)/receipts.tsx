@@ -67,6 +67,7 @@ export default function ReceiptsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [currency, setCurrency] = useState('CHF');
 
   useFocusEffect(
     useCallback(() => {
@@ -79,6 +80,13 @@ export default function ReceiptsScreen() {
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('country')
+        .eq('id', user.id)
+        .maybeSingle();
+      setCurrency(profile?.country === 'Canada' ? 'CAD' : 'CHF');
 
       const { data, error } = await supabase
         .from('receipts')
@@ -138,7 +146,7 @@ export default function ReceiptsScreen() {
           <Text style={styles.monthTitle}>{section.title}</Text>
           <Text style={styles.monthCount}>{section.data.length || sections.find(s => s.monthKey === section.monthKey)?.data.length || 0} receipts</Text>
         </View>
-        <Text style={styles.monthTotal}>CHF {section.total.toFixed(2)}</Text>
+        <Text style={styles.monthTotal}>{currency} {section.total.toFixed(2)}</Text>
       </TouchableOpacity>
     );
   }
@@ -178,7 +186,7 @@ export default function ReceiptsScreen() {
           </View>
         </View>
         <View style={styles.receiptRight}>
-          <Text style={styles.receiptAmount}>CHF {item.total_cost.toFixed(2)}</Text>
+          <Text style={styles.receiptAmount}>{currency} {item.total_cost.toFixed(2)}</Text>
           <ChevronRight size={18} color="#9ca3af" strokeWidth={2.5} />
         </View>
       </TouchableOpacity>
@@ -234,13 +242,13 @@ export default function ReceiptsScreen() {
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>All Time</Text>
-            <Text style={styles.summaryAmount}>CHF {totalAmount.toFixed(2)}</Text>
+            <Text style={styles.summaryAmount}>{currency} {totalAmount.toFixed(2)}</Text>
             <Text style={styles.summaryCount}>{totalCount} receipts</Text>
           </View>
           <View style={[styles.summaryCard, styles.summaryCardHighlight]}>
             <Text style={styles.summaryLabelHighlight}>This Month</Text>
             <Text style={styles.summaryAmountHighlight}>
-              CHF {(sections[0]?.total || 0).toFixed(2)}
+              {currency} {(sections[0]?.total || 0).toFixed(2)}
             </Text>
             <Text style={styles.summaryCountHighlight}>
               {sections[0]?.data.length || 0} receipts
