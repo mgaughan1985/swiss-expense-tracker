@@ -5,7 +5,9 @@
   "build": {
     "preview": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+	 "env": {
+          "EXPO_PUBLIC_SENTRY_DSN":"https://51de3511c4354cbf0b43e9d079147c25@o4511052791611392.ingest.de.sentry.io/4511052836241488"
       }
     }
   },
