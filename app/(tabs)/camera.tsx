@@ -1,5 +1,5 @@
 // app/(tabs)/camera.tsx
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, ArrowLeft } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
@@ -19,16 +19,35 @@ import CropTool, { CropRegion } from '@/components/CropTool';
 export default function CameraScreen() {
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState<{
     uri: string;
     width: number;
     height: number;
   } | null>(null);
 
+  // Request permissions on mount so the grant dialog completes before the
+  // camera launches — on Android 16 the permission activity transition races
+  // with launchCameraAsync if both happen in the same handler.
+  useEffect(() => {
+    ImagePicker.requestCameraPermissionsAsync();
+  }, []);
+
+  // Clean up stale state when the user navigates away mid-flow.
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setPendingPhoto(null);
+        setIsLaunching(false);
+      };
+    }, [])
+  );
+
   async function handleTakePhoto() {
+    if (isLaunching) return;
     try {
-      // Request camera permissions
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      setIsLaunching(true);
+      const { status } = await ImagePicker.getCameraPermissionsAsync();
 
       if (status !== 'granted') {
         Alert.alert(
@@ -59,6 +78,8 @@ export default function CameraScreen() {
     } catch (error) {
       console.error('Camera error:', error);
       Alert.alert('Error', 'Failed to capture photo. Please try again.');
+    } finally {
+      setIsLaunching(false);
     }
   }
 
@@ -190,9 +211,9 @@ export default function CameraScreen() {
 
         {/* Capture Button */}
         <TouchableOpacity
-          style={[styles.captureButton, isUploading && styles.captureButtonDisabled]}
+          style={[styles.captureButton, (isUploading || isLaunching) && styles.captureButtonDisabled]}
           onPress={handleTakePhoto}
-          disabled={isUploading}>
+          disabled={isUploading || isLaunching}>
           {isUploading ? (
             <>
               <ActivityIndicator size="small" color="#ffffff" />
@@ -289,11 +310,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F59E0B',
-    shadowColor: '#DC2626',
     padding: 18,
     borderRadius: 12,
     gap: 12,
-    shadowColor: '#DC2626',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
